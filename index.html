@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JuiceFlow | إدارة الشحنات والتوزيع</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    :root{
+      --bg:#f4f7fb; --card:#fff; --text:#172033; --muted:#6b7280;
+      --primary:#1565c0; --primary2:#0d47a1; --success:#168a4b;
+      --warning:#d97706; --danger:#c62828; --line:#e5e7eb; --soft:#eef5ff;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    button,input,select,textarea{font:inherit}
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    aside{background:linear-gradient(180deg,#0d47a1,#1565c0);color:#fff;padding:22px 16px;position:sticky;top:0;height:100vh}
+    .brand{display:flex;gap:12px;align-items:center;margin-bottom:28px}
+    .logo{width:48px;height:48px;border-radius:14px;background:#fff;color:#1565c0;display:grid;place-items:center;font-size:26px;font-weight:700}
+    .brand h1{font-size:20px;margin:0}.brand small{opacity:.8}
+    nav button{width:100%;border:0;background:transparent;color:#fff;text-align:right;padding:13px 14px;border-radius:10px;margin:4px 0;cursor:pointer}
+    nav button:hover,nav button.active{background:rgba(255,255,255,.16)}
+    main{padding:24px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:12px;flex-wrap:wrap}
+    .topbar h2{margin:0}.badge{background:var(--soft);color:var(--primary2);padding:8px 12px;border-radius:999px;font-size:13px}
+    .page{display:none}.page.active{display:block}
+    .grid{display:grid;gap:16px}.grid-4{grid-template-columns:repeat(4,1fr)}.grid-2{grid-template-columns:repeat(2,1fr)}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 6px 20px rgba(15,23,42,.04)}
+    .stat strong{display:block;font-size:27px;margin-top:8px}.muted{color:var(--muted)}
+    .section-title{display:flex;justify-content:space-between;align-items:center;margin:0 0 14px}
+    .btn{border:0;border-radius:10px;padding:10px 16px;cursor:pointer}.btn-primary{background:var(--primary);color:#fff}.btn-success{background:var(--success);color:#fff}.btn-light{background:#eef2f7}.btn-danger{background:#fee2e2;color:#991b1b}
+    table{width:100%;border-collapse:collapse}th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:right;font-size:14px}th{color:#475569;background:#f8fafc}
+    .status{padding:5px 9px;border-radius:999px;font-size:12px;display:inline-block}.s-loaded{background:#dbeafe;color:#1d4ed8}.s-delivered{background:#dcfce7;color:#166534}.s-pending{background:#fef3c7;color:#92400e}
+    label{display:block;margin-bottom:6px;font-size:13px;color:#475569}
+    input,select,textarea{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
+    .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.full{grid-column:1/-1}
+    .branch-row,.item-row{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
+.stop-editor{border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;background:#fbfdff}
+.stop-editor-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px}
+.stop-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stop-items{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.stop-item-row{display:grid;grid-template-columns:1.5fr .7fr auto;gap:10px;align-items:end;margin-bottom:8px}
+    .driver-shell{max-width:520px;margin:auto;background:#eef3f8;padding:14px;border-radius:24px}
+    .phone{background:#fff;border-radius:22px;overflow:hidden;border:1px solid #dbe3ee}
+    .phone-head{background:linear-gradient(135deg,#0d47a1,#1976d2);color:#fff;padding:20px}
+    .stop{border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}.stop h4{margin:0 0 6px}
+    .stop.done{border-color:#86efac;background:#f0fdf4}
+    .qty{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #e5e7eb}
+    .qrbox{display:grid;place-items:center;min-height:210px;background:#fff;border:1px dashed #94a3b8;border-radius:14px;padding:14px}
+    .fakeqr{width:180px;height:180px;display:grid;grid-template-columns:repeat(21,1fr);gap:1px;background:#fff;padding:6px}
+    .fakeqr span{background:#111}.fakeqr span.w{background:#fff}
+    .toast{position:fixed;left:20px;bottom:20px;background:#111827;color:#fff;padding:12px 16px;border-radius:10px;opacity:0;transform:translateY(10px);transition:.2s}.toast.show{opacity:1;transform:none}
+    @media print{aside,.topbar{display:none!important}.app{display:block}.page{display:none!important}#qrModal{display:block!important}.grid-2{grid-template-columns:1fr}.card{box-shadow:none;border:0}body{background:#fff}}
+@media(max-width:900px){.stop-grid{grid-template-columns:1fr 1fr}.stop-item-row{grid-template-columns:1fr 1fr}.stop-item-row button{grid-column:1/-1}.app{grid-template-columns:1fr}aside{height:auto;position:relative}nav{display:flex;overflow:auto;gap:6px}nav button{white-space:nowrap;text-align:center}.grid-4,.grid-2,.form-grid{grid-template-columns:1fr}.branch-row,.item-row{grid-template-columns:1fr 1fr}.hide-mobile{display:none}main{padding:14px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <div class="logo">J</div>
+      <div><h1>JuiceFlow</h1><small>Shipment & Distribution</small></div>
+    </div>
+    <nav>
+      <button class="active" data-page="dashboard"><span data-i18n="dashboard">لوحة التحكم</span></button>
+      <button data-page="shipments"><span data-i18n="shipments">الشحنات</span></button>
+      <button data-page="create"><span data-i18n="create_shipment">إنشاء شحنة</span></button>
+      <button data-page="driver"><span data-i18n="driver_screen">شاشة السائق</span></button>
+      <button data-page="customers"><span data-i18n="customers_branches">العملاء والفروع</span></button>
+      <button data-page="tracking"><span>تتبع العربيات</span></button>
+      <button data-page="reports"><span data-i18n="reports">التقارير</span></button>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div><h2 id="pageTitle">لوحة التحكم</h2><div class="muted" data-i18n="subtitle">نموذج تجريبي لإدارة تحميل وتوزيع منتجات المصنع</div></div>
+      <div style="display:flex;gap:8px;align-items:center"><button class="btn btn-light" id="langBtn" onclick="toggleLang()">English</button><span class="badge" data-i18n="demo_badge">Demo MVP — مصنع العصير</span></div>
+    </div>
+
+    <section id="dashboard" class="page active">
+      <div class="grid grid-4">
+        <div class="card stat"><span class="muted">شحنات اليوم</span><strong id="statShipments">0</strong></div>
+        <div class="card stat"><span class="muted">قيد التوزيع</span><strong>2</strong></div>
+        <div class="card stat"><span class="muted">تم التسليم</span><strong>1</strong></div>
+        <div class="card stat"><span class="muted">إجمالي الكراتين</span><strong id="statCartons">0</strong></div>
+      </div>
+      <div class="card" style="margin-top:16px;background:linear-gradient(135deg,#e3f2fd,#f8fbff)"><div class="section-title"><div><h3 style="margin:0">GPS Fleet Tracking</h3><div class="muted">متابعة العربيات، السرعة، التوقفات، والتأخير</div></div><button class="btn btn-primary" onclick="go('tracking')">فتح التتبع</button></div></div>
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="card">
+          <div class="section-title"><h3>آخر الشحنات</h3><button class="btn btn-light" onclick="go('shipments')">عرض الكل</button></div>
+          <div style="overflow:auto"><table><thead><tr><th>رقم الشحنة</th><th>السائق</th><th>العميل</th><th>الحالة</th></tr></thead>
+          <tbody id="recentShipments"></tbody></table></div>
+        </div>
+        <div class="card">
+          <h3>حالة التوزيع اليوم</h3>
+          <div style="margin-top:18px">
+            <div class="muted">تم التسليم 62%</div>
+            <div style="height:12px;background:#e5e7eb;border-radius:999px;margin-top:8px"><div style="height:100%;width:62%;background:#168a4b;border-radius:999px"></div></div>
+          </div>
+          <div style="margin-top:24px" class="muted">يظهر للإدارة الفرق بين الكمية المحملة، المسلمة، والمرتجعة لكل سيارة وسائق.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="shipments" class="page">
+      <div class="card">
+        <div class="section-title"><h3>قائمة الشحنات</h3><button class="btn btn-primary" onclick="go('create')">+ شحنة جديدة</button></div>
+        <div style="overflow:auto"><table><thead><tr><th>رقم الشحنة</th><th>التاريخ</th><th>خط السير</th><th>السائق</th><th>السيارة</th><th>عملاء / نقاط</th><th>الكراتين</th><th>الحالة</th><th></th></tr></thead>
+        <tbody id="shipmentsTable"></tbody></table></div>
+      </div>
+    </section>
+
+    
+<section id="create" class="page">
+  <div class="card">
+    <div class="section-title">
+      <h3>إنشاء شحنة وخط سير</h3>
+      <span class="muted">الشحنة الواحدة يمكن أن تضم أكثر من عميل وأكثر من فرع</span>
+    </div>
+
+    <div class="form-grid">
+      <div>
+        <label>اسم خط السير / المدينة</label>
+        <input id="routeName" value="الإسكندرية" placeholder="مثال: الإسكندرية">
+      </div>
+      <div>
+        <label>السائق</label>
+        <select id="driverName">
+          <option>أحمد محمود</option>
+          <option>محمد السيد</option>
+          <option>كريم حسن</option>
+        </select>
+      </div>
+      <div>
+        <label>رقم السيارة</label>
+        <select id="vehicle">
+          <option>أ ب ج 1234</option>
+          <option>د هـ و 7842</option>
+        </select>
+      </div>
+      <div>
+        <label>رقم موبايل السائق / المندوب</label>
+        <input id="driverPhone" value="201000000000" placeholder="2010XXXXXXXX">
+      </div>
+      <div>
+        <label>تاريخ التسليم</label>
+        <input id="deliveryDate" type="date">
+      </div>
+    </div>
+
+    <h4 style="margin:22px 0 10px">نقاط التسليم داخل الشحنة</h4>
+    <div class="muted" style="margin-bottom:12px">
+      أضف كل فرع كنقطة مستقلة، وحدد ترتيب الزيارة واللوكيشن والأصناف الخاصة به.
+    </div>
+
+    <div id="stopRows"></div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+      <button class="btn btn-light" onclick="addStop()">+ إضافة نقطة تسليم</button>
+      <button class="btn btn-light" onclick="resetRouteForm()">مسح البيانات</button>
+      <button class="btn btn-success" onclick="createShipment()">تأكيد التحميل وإنشاء QR</button>
+    </div>
+  </div>
+</section>
+
+<section id="driver" class="page">
+  <div class="driver-shell">
+    <div class="phone">
+      <div class="phone-head">
+        <div style="opacity:.85">الشحنة الحالية</div>
+        <h2 id="driverShipmentNo" style="margin:5px 0">SH-2026-001</h2>
+        <div id="driverMeta">أحمد محمود — أ ب ج 1234</div>
+        <div id="driverRoute" style="margin-top:6px;opacity:.9">الإسكندرية</div>
+      </div>
+      <div style="padding:16px">
+        <div class="grid grid-2" style="grid-template-columns:1fr 1fr">
+          <div class="card" style="box-shadow:none;background:#f8fafc">
+            <div class="muted">إجمالي التحميل</div>
+            <strong id="driverTotal" style="font-size:24px">0 كرتونة</strong>
+          </div>
+          <div class="card" style="box-shadow:none;background:#f8fafc">
+            <div class="muted">نقاط التسليم</div>
+            <strong id="driverStopsCount" style="font-size:24px">0</strong>
+          </div>
+        </div>
+
+        <div id="driverStops"></div>
+
+        <button class="btn btn-success" style="width:100%;margin-top:12px" onclick="finishRoute()">إنهاء خط السير</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+    <section id="customers" class="page">
+      <div class="grid grid-2">
+        <div class="card"><h3>Costa Coffee</h3><p class="muted">4 فروع مسجلة</p><hr style="border:0;border-top:1px solid var(--line)">
+          <p>التجمع الخامس — Point 90</p><p>المعادي — شارع 9</p><p>المهندسين — جامعة الدول</p><p>الزمالك — شارع أبو الفدا</p>
+        </div>
+        <div class="card"><h3>Circle K</h3><p class="muted">3 فروع مسجلة</p><hr style="border:0;border-top:1px solid var(--line)">
+          <p>التجمع — شارع التسعين</p><p>مدينة نصر — عباس العقاد</p><p>الدقي — التحرير</p>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="tracking" class="page">
+      <div class="grid grid-4">
+        <div class="card stat"><span class="muted">العربيات المتصلة</span><strong>3</strong></div>
+        <div class="card stat"><span class="muted">متحركة الآن</span><strong>2</strong></div>
+        <div class="card stat"><span class="muted">متوقفة</span><strong>1</strong></div>
+        <div class="card stat"><span class="muted">تنبيهات نشطة</span><strong>2</strong></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="card">
+          <div class="section-title">
+            <h3>خريطة تتبع العربيات</h3>
+            <span class="badge">GPS Tracker Demo</span>
+          </div>
+
+          <div id="gpsMap" style="position:relative;height:420px;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:
+            linear-gradient(90deg,rgba(21,101,192,.08) 1px,transparent 1px),
+            linear-gradient(rgba(21,101,192,.08) 1px,transparent 1px),
+            #eef6fb;background-size:38px 38px;">
+
+            <div style="position:absolute;inset:0;background:
+              radial-gradient(circle at 18% 70%,rgba(30,136,229,.12),transparent 18%),
+              radial-gradient(circle at 68% 30%,rgba(22,138,75,.12),transparent 20%),
+              radial-gradient(circle at 82% 76%,rgba(217,119,6,.12),transparent 18%);"></div>
+
+            <svg viewBox="0 0 1000 500" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+              <path d="M80,410 C190,360 230,330 320,300 S480,230 560,250 S730,320 910,100"
+                    fill="none" stroke="#1565c0" stroke-width="8" stroke-linecap="round" stroke-dasharray="16 12" opacity=".65"/>
+              <circle cx="80" cy="410" r="10" fill="#0d47a1"/>
+              <circle cx="320" cy="300" r="10" fill="#0d47a1"/>
+              <circle cx="560" cy="250" r="10" fill="#0d47a1"/>
+              <circle cx="910" cy="100" r="10" fill="#0d47a1"/>
+            </svg>
+
+            <button onclick="selectVehicle('أ ب ج 1234')" style="position:absolute;left:28%;top:53%;border:0;background:#1565c0;color:white;border-radius:999px;padding:9px 12px;box-shadow:0 6px 16px rgba(0,0,0,.18);cursor:pointer">🚚 أ ب ج 1234</button>
+            <button onclick="selectVehicle('د هـ و 7842')" style="position:absolute;left:65%;top:33%;border:0;background:#168a4b;color:white;border-radius:999px;padding:9px 12px;box-shadow:0 6px 16px rgba(0,0,0,.18);cursor:pointer">🚚 د هـ و 7842</button>
+            <button onclick="selectVehicle('س ص ع 5566')" style="position:absolute;left:76%;top:72%;border:0;background:#d97706;color:white;border-radius:999px;padding:9px 12px;box-shadow:0 6px 16px rgba(0,0,0,.18);cursor:pointer">⚠️ س ص ع 5566</button>
+
+            <div style="position:absolute;right:14px;bottom:14px;background:white;padding:10px 12px;border-radius:10px;border:1px solid var(--line);font-size:12px">
+              <div>● متحركة</div>
+              <div style="margin-top:4px">● متوقفة</div>
+              <div style="margin-top:4px">● تنبيه</div>
+            </div>
+          </div>
+
+          <div class="muted" style="margin-top:10px;font-size:12px">
+            خريطة تجريبية لشرح شكل الربط. في النسخة الفعلية يتم عرض بيانات حقيقية من شركة الـGPS عبر API.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-title">
+            <h3>تفاصيل العربية</h3>
+            <button class="btn btn-light" onclick="simulateGpsUpdate()">تحديث الموقع</button>
+          </div>
+
+          <div id="vehicleDetails">
+            <div class="card" style="box-shadow:none;background:#f8fafc;margin-bottom:12px">
+              <div class="muted">العربية</div>
+              <strong id="gpsVehicle" style="font-size:22px">أ ب ج 1234</strong>
+            </div>
+
+            <div class="grid grid-2" style="grid-template-columns:1fr 1fr">
+              <div class="card" style="box-shadow:none">
+                <div class="muted">الحالة</div>
+                <strong id="gpsStatus">متحركة</strong>
+              </div>
+              <div class="card" style="box-shadow:none">
+                <div class="muted">السرعة</div>
+                <strong id="gpsSpeed">72 كم/س</strong>
+              </div>
+              <div class="card" style="box-shadow:none">
+                <div class="muted">آخر تحديث</div>
+                <strong id="gpsLastUpdate">منذ دقيقة</strong>
+              </div>
+              <div class="card" style="box-shadow:none">
+                <div class="muted">مدة التوقف</div>
+                <strong id="gpsStopTime">0 دقيقة</strong>
+              </div>
+            </div>
+
+            <div class="stop" style="margin-top:14px">
+              <h4>الشحنة الحالية</h4>
+              <div id="gpsShipment">SH-ALEX-001</div>
+              <div class="muted" style="margin-top:6px">المحطة التالية</div>
+              <div id="gpsNextStop"><b>Costa Coffee — المنشية</b></div>
+            </div>
+
+            <div class="stop">
+              <h4>موقع العربية الحالي</h4>
+              <div id="gpsLocation">طريق القاهرة - الإسكندرية الصحراوي</div>
+              <button class="btn btn-light" style="margin-top:10px" onclick="window.open('https://www.google.com/maps/search/?api=1&query=30.65,29.72','_blank')">فتح الموقع على Google Maps</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px">
+        <div class="card">
+          <h3>تنبيهات التتبع</h3>
+          <div class="stop" style="border-color:#f59e0b;background:#fffbeb">
+            <h4 style="color:#92400e">توقف غير طبيعي</h4>
+            <div>العربية س ص ع 5566 متوقفة منذ 38 دقيقة خارج نقطة تسليم.</div>
+            <div class="muted" style="margin-top:6px">آخر تحديث: منذ دقيقتين</div>
+          </div>
+          <div class="stop" style="border-color:#ef4444;background:#fef2f2">
+            <h4 style="color:#991b1b">تأخير عن الموعد المتوقع</h4>
+            <div>العربية د هـ و 7842 متأخرة 22 دقيقة عن موعد الوصول للفرع التالي.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>سجل حركة العربية</h3>
+          <table>
+            <thead><tr><th>الوقت</th><th>الحدث</th><th>الموقع</th></tr></thead>
+            <tbody id="gpsHistory">
+              <tr><td>10:15</td><td>بدأت الرحلة</td><td>المصنع</td></tr>
+              <tr><td>10:42</td><td>تحركت بسرعة 68 كم/س</td><td>الطريق الصحراوي</td></tr>
+              <tr><td>11:05</td><td>تم تحديث الموقع</td><td>قرب بوابة الإسكندرية</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="reports" class="page">
+      <div class="grid grid-4">
+        <div class="card stat"><span class="muted">محمل</span><strong>248</strong><small>كرتونة</small></div>
+        <div class="card stat"><span class="muted">مسلم</span><strong>184</strong><small>كرتونة</small></div>
+        <div class="card stat"><span class="muted">مرتجع</span><strong>9</strong><small>كرتونة</small></div>
+        <div class="card stat"><span class="muted">متبقي بالعربيات</span><strong>55</strong><small>كرتونة</small></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h3>تقرير أداء السائقين</h3>
+        <table><thead><tr><th>السائق</th><th>الشحنات</th><th>الفروع</th><th>التسليم الكامل</th><th>مرتجع</th></tr></thead>
+        <tbody><tr><td>أحمد محمود</td><td>8</td><td>21</td><td>95%</td><td>3</td></tr><tr><td>محمد السيد</td><td>7</td><td>18</td><td>92%</td><td>5</td></tr></tbody></table>
+      </div>
+    </section>
+
+    <section id="qrModal" class="page">
+      <div class="grid grid-2">
+        <div class="card">
+          <h3>تم إنشاء الشحنة بنجاح</h3>
+          <p id="qrSummary" class="muted"></p>
+          <div class="qrbox" id="qrBox"></div>
+          <p class="muted" style="font-size:12px">عند نشر التطبيق أونلاين، مسح الكود يفتح شاشة السائق الخاصة بهذه الشحنة مباشرة.</p>
+        </div>
+        <div class="card">
+          <h3>كشف توزيع الشحنة</h3>
+          <div id="qrManifest"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px"><button class="btn btn-primary" onclick="go('driver')">فتح شاشة السائق</button><button class="btn btn-light" onclick="printQR()">طباعة QR</button><button class="btn btn-success" onclick="sendWhatsApp()">إرسال واتساب</button><button class="btn btn-light" onclick="copyShipmentLink()">نسخ رابط الشحنة</button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+
+let currentLang = localStorage.getItem('juiceflow_lang') || 'ar';
+const translations = {
+ ar:{
+  dashboard:'لوحة التحكم',shipments:'الشحنات',create_shipment:'إنشاء شحنة',driver_screen:'شاشة السائق',
+  customers_branches:'العملاء والفروع',reports:'التقارير',subtitle:'نموذج تجريبي لإدارة تحميل وتوزيع منتجات المصنع',
+  demo_badge:'Demo MVP — مصنع العصير',page_dashboard:'لوحة التحكم',page_shipments:'الشحنات',
+  page_create:'إنشاء شحنة',page_driver:'شاشة السائق',page_customers:'العملاء والفروع',page_reports:'التقارير',page_qr:'QR الشحنة'
+ },
+ en:{
+  dashboard:'Dashboard',shipments:'Shipments',create_shipment:'Create Shipment',driver_screen:'Driver Screen',
+  customers_branches:'Customers & Branches',reports:'Reports',subtitle:'Demo system for factory loading and distribution management',
+  demo_badge:'Demo MVP — Juice Factory',page_dashboard:'Dashboard',page_shipments:'Shipments',
+  page_create:'Create Shipment',page_driver:'Driver Screen',page_customers:'Customers & Branches',page_reports:'Reports',page_qr:'Shipment QR'
+ }
+};
+
+const exactTextMap = {
+ 'شحنات اليوم':'Today’s Shipments','قيد التوزيع':'Out for Delivery','تم التسليم':'Delivered',
+ 'إجمالي الكراتين':'Total Cartons','آخر الشحنات':'Latest Shipments','عرض الكل':'View All',
+ 'حالة التوزيع اليوم':'Today’s Distribution Status','تم التسليم 62%':'62% Delivered',
+ 'يظهر للإدارة الفرق بين الكمية المحملة، المسلمة، والمرتجعة لكل سيارة وسائق.':'Management can compare loaded, delivered, and returned quantities by vehicle and driver.',
+ 'قائمة الشحنات':'Shipment List','+ شحنة جديدة':'+ New Shipment','رقم الشحنة':'Shipment No.',
+ 'التاريخ':'Date','السائق':'Driver','السيارة':'Vehicle','العملاء/الفروع':'Customers / Branches',
+ 'الكراتين':'Cartons','الحالة':'Status','فتح':'Open','إنشاء أمر تحميل جديد':'Create New Loading Order',
+ 'المخزن يجهز الشحنة ثم يخصصها للسائق':'The warehouse prepares the shipment and assigns it to a driver',
+ 'رقم السيارة':'Vehicle Number','تاريخ التسليم':'Delivery Date','نقاط التسليم':'Delivery Stops',
+ '+ إضافة فرع':'+ Add Branch','الأصناف والكميات':'Products & Quantities','+ إضافة صنف':'+ Add Product',
+ 'مسح البيانات':'Clear Data','تأكيد التحميل وإنشاء QR':'Confirm Loading & Generate QR',
+ 'العميل والفرع':'Customer & Branch','مسؤول الاستلام':'Receiving Contact','رقم التواصل':'Contact Number',
+ 'حذف':'Delete','الصنف':'Product','الكمية':'Quantity','الوحدة':'Unit','كرتونة':'Carton',
+ 'الشحنة الحالية':'Current Shipment','إجمالي التحميل':'Total Load','إنهاء خط السير':'Finish Route',
+ 'اضغط لفتح الموقع وتسجيل التسليم':'Open location and record delivery','فتح الموقع':'Open Location',
+ 'تأكيد التسليم':'Confirm Delivery','تم إنشاء الشحنة بنجاح':'Shipment Created Successfully',
+ 'عند نشر التطبيق أونلاين، مسح الكود يفتح شاشة السائق الخاصة بهذه الشحنة مباشرة.':'When the app is published online, scanning this code opens the driver screen for this shipment.',
+ 'كشف توزيع الشحنة':'Shipment Distribution Manifest','فتح شاشة السائق':'Open Driver Screen',
+ '4 فروع مسجلة':'4 registered branches','3 فروع مسجلة':'3 registered branches',
+ 'محمل':'Loaded','مسلم':'Delivered','مرتجع':'Returned','متبقي بالعربيات':'Remaining in Vehicles',
+ 'تقرير أداء السائقين':'Driver Performance Report','الشحنات':'Shipments','الفروع':'Branches',
+ 'التسليم الكامل':'Full Delivery','جاهزة للتحميل':'Ready for Loading','QR الشحنة':'Shipment QR',
+ 'مصنع العصير':'Juice Factory'
+};
+function translateVisibleText(){
+ const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+ let node;
+ while(node=walker.nextNode()){
+   const raw=node.nodeValue;
+   const t=raw.trim();
+   if(!t) continue;
+   if(!node.parentElement.dataset.originalText) node.parentElement.dataset.originalText=t;
+   if(currentLang==='en'){
+     if(exactTextMap[t]) node.nodeValue=raw.replace(t,exactTextMap[t]);
+     else if(/^\d+\s+كرتونة$/.test(t)) node.nodeValue=raw.replace(t,t.replace('كرتونة','Cartons'));
+     else if(t.includes(' كرتونة')) node.nodeValue=raw.replace(t,t.replace(/كرتونة/g,'Cartons'));
+   } else if(node.parentElement.dataset.originalText){
+     const original=node.parentElement.dataset.originalText;
+     if(exactTextMap[original] || original.includes('كرتونة')) node.nodeValue=raw.replace(t,original);
+   }
+ }
+ document.querySelectorAll('input').forEach(el=>{
+   if(!el.dataset.originalPlaceholder) el.dataset.originalPlaceholder=el.placeholder||'';
+ });
+}
+
+function applyLanguage(){
+ document.documentElement.lang=currentLang;
+ document.documentElement.dir=currentLang==='ar'?'rtl':'ltr';
+ document.querySelectorAll('[data-i18n]').forEach(el=>{
+   const key=el.dataset.i18n;
+   if(translations[currentLang][key]) el.textContent=translations[currentLang][key];
+ });
+ document.getElementById('langBtn').textContent=currentLang==='ar'?'English':'العربية';
+ document.body.style.fontFamily=currentLang==='ar'?'Tahoma,Arial,sans-serif':'Arial,Tahoma,sans-serif';
+ document.getElementById('pageTitle').textContent=titles[currentPage]?titles[currentPage]():titles.dashboard();
+ render();
+ renderDriver();
+ setTimeout(translateVisibleText,0);
+}
+function toggleLang(){
+ currentLang=currentLang==='ar'?'en':'ar';
+ localStorage.setItem('juiceflow_lang',currentLang);
+ applyLanguage();
+}
+let currentPage='dashboard';
+const titles={
+ dashboard:()=>translations[currentLang].page_dashboard,
+ shipments:()=>translations[currentLang].page_shipments,
+ create:()=>translations[currentLang].page_create,
+ driver:()=>translations[currentLang].page_driver,
+ customers:()=>translations[currentLang].page_customers,
+ tracking:()=>currentLang==='ar'?'تتبع العربيات':'Vehicle Tracking',
+ reports:()=>translations[currentLang].page_reports,
+ qrModal:()=>translations[currentLang].page_qr
+};
+let shipments = JSON.parse(localStorage.getItem('juiceflow_shipments_v2')||'null') || [
+ {
+  id:'SH-ALEX-001',
+  date:'2026-07-09',
+  route:'الإسكندرية',
+  driver:'أحمد محمود',
+  vehicle:'أ ب ج 1234',
+  phone:'201000000001',
+  stops:[
+   {
+    order:1,
+    customer:'Costa Coffee',
+    branch:'المنشية',
+    contact:'محمد علي',
+    phone:'201111111111',
+    address:'المنشية - الإسكندرية',
+    mapUrl:'https://www.google.com/maps/search/?api=1&query=31.1992,29.8944',
+    status:'قيد الانتظار',
+    items:[
+      {name:'عصير مانجو 250 مل',qty:15},
+      {name:'عصير برتقال 250 مل',qty:10}
+    ]
+   },
+   {
+    order:2,
+    customer:'Costa Coffee',
+    branch:'الورديان',
+    contact:'أحمد سمير',
+    phone:'201222222222',
+    address:'الورديان - الإسكندرية',
+    mapUrl:'https://www.google.com/maps/search/?api=1&query=31.1775,29.8676',
+    status:'قيد الانتظار',
+    items:[
+      {name:'عصير مانجو 250 مل',qty:20},
+      {name:'عصير جوافة 250 مل',qty:5}
+    ]
+   },
+   {
+    order:3,
+    customer:'Starbucks',
+    branch:'المعمورة',
+    contact:'محمود حسن',
+    phone:'201333333333',
+    address:'المعمورة - الإسكندرية',
+    mapUrl:'https://www.google.com/maps/search/?api=1&query=31.2868,30.0180',
+    status:'قيد الانتظار',
+    items:[
+      {name:'عصير برتقال 250 مل',qty:10},
+      {name:'عصير تفاح 1 لتر',qty:8}
+    ]
+   },
+   {
+    order:4,
+    customer:'Starbucks',
+    branch:'سيدي بشر',
+    contact:'كريم عادل',
+    phone:'201444444444',
+    address:'سيدي بشر - الإسكندرية',
+    mapUrl:'https://www.google.com/maps/search/?api=1&query=31.2635,29.9916',
+    status:'قيد الانتظار',
+    items:[
+      {name:'عصير مانجو 250 مل',qty:12},
+      {name:'عصير جوافة 250 مل',qty:6}
+    ]
+   }
+  ],
+  status:'قيد التوزيع'
+ }
+];
+let activeShipment = shipments[0];
+if(!localStorage.getItem('juiceflow_shipments_v2_initialized')){localStorage.removeItem('juiceflow_shipments');localStorage.setItem('juiceflow_shipments_v2_initialized','1');}
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
+function go(id){
+ currentPage=id;
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+ document.getElementById('pageTitle').textContent=titles[id]?titles[id]():'JuiceFlow';
+ if(id==='driver') renderDriver();
+}
+function statusClass(s){return s==='تم التسليم'?'s-delivered':s==='قيد التوزيع'?'s-loaded':'s-pending'}
+function displayStatus(s){if(currentLang==='ar')return s;return s==='تم التسليم'?'Delivered':s==='قيد التوزيع'?'Out for Delivery':'Ready for Loading'}
+
+function total(s){
+ return (s.stops||[]).reduce((sum,stop)=>sum+(stop.items||[]).reduce((a,b)=>a+Number(b.qty||0),0),0);
+}
+function customersCount(s){
+ return new Set((s.stops||[]).map(x=>x.customer)).size;
+}
+function render(){
+ const rows=shipments.map(s=>`<tr>
+  <td><b>${s.id}</b></td>
+  <td>${s.date}</td>
+  <td>${s.route||'-'}</td>
+  <td>${s.driver}</td>
+  <td>${s.vehicle}</td>
+  <td>${customersCount(s)} / ${(s.stops||[]).length}</td>
+  <td>${total(s)}</td>
+  <td><span class="status ${statusClass(s.status)}">${displayStatus(s.status)}</span></td>
+  <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+   <button class="btn btn-light" onclick="openShipment('${s.id}')">فتح</button>
+   <button class="btn btn-light" onclick="activeShipment=shipments.find(x=>x.id==='${s.id}');showQR(activeShipment)">QR</button>
+   <button class="btn btn-success" onclick="activeShipment=shipments.find(x=>x.id==='${s.id}');sendWhatsApp()">واتساب</button>
+  </div></td>
+ </tr>`).join('');
+
+ document.getElementById('shipmentsTable').innerHTML=rows;
+
+ document.getElementById('recentShipments').innerHTML=shipments.slice(0,4).map(s=>`<tr>
+   <td>${s.id}</td>
+   <td>${s.driver}</td>
+   <td>${s.route||'-'} — ${(s.stops||[]).length} نقاط</td>
+   <td><span class="status ${statusClass(s.status)}">${displayStatus(s.status)}</span></td>
+ </tr>`).join('');
+
+ document.getElementById('statShipments').textContent=shipments.length;
+ document.getElementById('statCartons').textContent=shipments.reduce((a,s)=>a+total(s),0);
+ localStorage.setItem('juiceflow_shipments_v2',JSON.stringify(shipments));
+}
+
+function stopItemRow(name='عصير مانجو 250 مل',qty=10){
+ return `<div class="stop-item-row">
+   <div>
+    <label>الصنف</label>
+    <select class="stopItemName">
+      <option ${name==='عصير مانجو 250 مل'?'selected':''}>عصير مانجو 250 مل</option>
+      <option ${name==='عصير برتقال 250 مل'?'selected':''}>عصير برتقال 250 مل</option>
+      <option ${name==='عصير جوافة 250 مل'?'selected':''}>عصير جوافة 250 مل</option>
+      <option ${name==='عصير تفاح 1 لتر'?'selected':''}>عصير تفاح 1 لتر</option>
+    </select>
+   </div>
+   <div>
+    <label>الكمية</label>
+    <input class="stopItemQty" type="number" min="1" value="${qty}">
+   </div>
+   <button class="btn btn-danger" onclick="this.parentElement.remove()">حذف الصنف</button>
+ </div>`;
+}
+
+function addStop(data={}){
+ const wrap=document.createElement('div');
+ wrap.className='stop-editor';
+ const count=document.querySelectorAll('.stop-editor').length+1;
+ const order=data.order||count;
+
+ wrap.innerHTML=`
+  <div class="stop-editor-head">
+    <h4 style="margin:0">نقطة التسليم رقم <span class="stopNumber">${order}</span></h4>
+    <button class="btn btn-danger" onclick="this.closest('.stop-editor').remove();renumberStops()">حذف النقطة</button>
+  </div>
+
+  <div class="stop-grid">
+    <div>
+      <label>ترتيب الزيارة</label>
+      <input class="stopOrder" type="number" min="1" value="${order}">
+    </div>
+    <div>
+      <label>العميل</label>
+      <select class="stopCustomer">
+        <option ${data.customer==='Costa Coffee'?'selected':''}>Costa Coffee</option>
+        <option ${data.customer==='Starbucks'?'selected':''}>Starbucks</option>
+        <option ${data.customer==='Circle K'?'selected':''}>Circle K</option>
+        <option ${data.customer==='Other'?'selected':''}>Other</option>
+      </select>
+    </div>
+    <div>
+      <label>الفرع</label>
+      <input class="stopBranch" value="${data.branch||''}" placeholder="مثال: المنشية">
+    </div>
+    <div>
+      <label>مسؤول الاستلام</label>
+      <input class="stopContact" value="${data.contact||''}" placeholder="اسم المسؤول">
+    </div>
+
+    <div>
+      <label>رقم التواصل</label>
+      <input class="stopPhone" value="${data.phone||''}" placeholder="2010XXXXXXXX">
+    </div>
+    <div>
+      <label>العنوان</label>
+      <input class="stopAddress" value="${data.address||''}" placeholder="العنوان الكامل">
+    </div>
+    <div class="full" style="grid-column:span 2">
+      <label>رابط Google Maps</label>
+      <input class="stopMapUrl" value="${data.mapUrl||''}" placeholder="https://maps.google.com/...">
+    </div>
+  </div>
+
+  <div class="stop-items">
+    <div class="section-title">
+      <h4 style="margin:0">أصناف هذا الفرع</h4>
+      <button class="btn btn-light" onclick="addStopItem(this)">+ إضافة صنف</button>
+    </div>
+    <div class="stopItemsContainer"></div>
+  </div>
+ `;
+
+ document.getElementById('stopRows').appendChild(wrap);
+
+ const container=wrap.querySelector('.stopItemsContainer');
+ const items=(data.items&&data.items.length)?data.items:[{name:'عصير مانجو 250 مل',qty:10}];
+ items.forEach(it=>container.insertAdjacentHTML('beforeend',stopItemRow(it.name,it.qty)));
+ renumberStops();
+}
+
+function addStopItem(btn){
+ const container=btn.closest('.stop-editor').querySelector('.stopItemsContainer');
+ container.insertAdjacentHTML('beforeend',stopItemRow());
+}
+
+function renumberStops(){
+ [...document.querySelectorAll('.stop-editor')].forEach((el,i)=>{
+   el.querySelector('.stopNumber').textContent=i+1;
+   if(!el.querySelector('.stopOrder').value) el.querySelector('.stopOrder').value=i+1;
+ });
+}
+
+function resetRouteForm(){
+ document.getElementById('stopRows').innerHTML='';
+ addStop({
+  order:1,customer:'Costa Coffee',branch:'المنشية',contact:'محمد علي',
+  phone:'201111111111',address:'المنشية - الإسكندرية',
+  mapUrl:'https://www.google.com/maps/search/?api=1&query=31.1992,29.8944',
+  items:[{name:'عصير مانجو 250 مل',qty:15},{name:'عصير برتقال 250 مل',qty:10}]
+ });
+ addStop({
+  order:2,customer:'Costa Coffee',branch:'الورديان',contact:'أحمد سمير',
+  phone:'201222222222',address:'الورديان - الإسكندرية',
+  mapUrl:'https://www.google.com/maps/search/?api=1&query=31.1775,29.8676',
+  items:[{name:'عصير مانجو 250 مل',qty:20},{name:'عصير جوافة 250 مل',qty:5}]
+ });
+ addStop({
+  order:3,customer:'Starbucks',branch:'المعمورة',contact:'محمود حسن',
+  phone:'201333333333',address:'المعمورة - الإسكندرية',
+  mapUrl:'https://www.google.com/maps/search/?api=1&query=31.2868,30.0180',
+  items:[{name:'عصير برتقال 250 مل',qty:10},{name:'عصير تفاح 1 لتر',qty:8}]
+ });
+ addStop({
+  order:4,customer:'Starbucks',branch:'سيدي بشر',contact:'كريم عادل',
+  phone:'201444444444',address:'سيدي بشر - الإسكندرية',
+  mapUrl:'https://www.google.com/maps/search/?api=1&query=31.2635,29.9916',
+  items:[{name:'عصير مانجو 250 مل',qty:12},{name:'عصير جوافة 250 مل',qty:6}]
+ });
+}
+
+function createShipment(){
+ const editors=[...document.querySelectorAll('.stop-editor')];
+ if(!editors.length){toast('أضف نقطة تسليم واحدة على الأقل');return}
+
+ const stops=editors.map((el,index)=>({
+   order:Number(el.querySelector('.stopOrder').value||index+1),
+   customer:el.querySelector('.stopCustomer').value,
+   branch:el.querySelector('.stopBranch').value.trim(),
+   contact:el.querySelector('.stopContact').value.trim(),
+   phone:el.querySelector('.stopPhone').value.trim(),
+   address:el.querySelector('.stopAddress').value.trim(),
+   mapUrl:el.querySelector('.stopMapUrl').value.trim(),
+   status:'قيد الانتظار',
+   items:[...el.querySelectorAll('.stop-item-row')].map(r=>({
+     name:r.querySelector('.stopItemName').value,
+     qty:Number(r.querySelector('.stopItemQty').value||0)
+   })).filter(x=>x.qty>0)
+ })).sort((a,b)=>a.order-b.order);
+
+ if(stops.some(x=>!x.branch||!x.items.length)){
+   toast('تأكد من اسم الفرع وإضافة صنف واحد على الأقل لكل نقطة');
+   return;
+ }
+
+ const id='SH-'+(document.getElementById('routeName').value.trim()||'ROUTE').replace(/\s+/g,'-').toUpperCase()+'-'+String(shipments.length+1).padStart(3,'0');
+
+ const s={
+   id,
+   date:document.getElementById('deliveryDate').value||new Date().toISOString().slice(0,10),
+   route:document.getElementById('routeName').value.trim()||'خط سير جديد',
+   driver:document.getElementById('driverName').value,
+   vehicle:document.getElementById('vehicle').value,
+   phone:document.getElementById('driverPhone').value.trim(),
+   stops,
+   status:'قيد التوزيع'
+ };
+
+ shipments.unshift(s);
+ activeShipment=s;
+ render();
+ showQR(s);
+}
+
+function showQR(s){
+ document.getElementById('qrSummary').textContent=currentLang==='ar'
+   ?`${s.id} — ${s.route||''} — ${s.driver} — ${total(s)} كرتونة — ${(s.stops||[]).length} نقاط`
+   :`${s.id} — ${s.route||''} — ${s.driver} — ${total(s)} cartons — ${(s.stops||[]).length} stops`;
+
+ document.getElementById('qrManifest').innerHTML=(s.stops||[]).sort((a,b)=>a.order-b.order).map(stop=>`
+   <div class="stop">
+    <h4>${stop.order}. ${stop.customer} — ${stop.branch}</h4>
+    <div class="muted">${stop.address||''}</div>
+    ${(stop.items||[]).map(it=>`<div class="qty"><span>${it.name}</span><b>${it.qty} ${currentLang==='ar'?'كرتونة':'Cartons'}</b></div>`).join('')}
+   </div>
+ `).join('');
+
+ makeFakeQR(document.getElementById('qrBox'),s.id);
+ go('qrModal');
+}
+function shipmentLink(s){
+ const base=location.href.split('?')[0].split('#')[0];
+ return `${base}?shipment=${encodeURIComponent(s.id)}`;
+}
+function makeFakeQR(el,seed){
+ el.innerHTML='';
+ const s=shipments.find(x=>x.id===seed)||activeShipment;
+ const link=shipmentLink(s);
+ if(window.QRCode){
+   new QRCode(el,{text:link,width:190,height:190,correctLevel:QRCode.CorrectLevel.H});
+ }else{
+   el.innerHTML=`<div style="padding:20px;text-align:center"><b>${seed}</b><p class="muted">وصّل الجهاز بالإنترنت لإظهار QR الحقيقي في نسخة العرض.</p></div>`;
+ }
+}
+function printQR(){window.print()}
+function copyShipmentLink(){
+ const link=shipmentLink(activeShipment);
+ if(navigator.clipboard){
+   navigator.clipboard.writeText(link).then(()=>toast(currentLang==='ar'?'تم نسخ رابط الشحنة':'Shipment link copied'));
+ }else{
+   prompt('Copy shipment link',link);
+ }
+}
+function sendWhatsApp(){
+ const s=activeShipment;
+ const phone=(s.phone||'').replace(/\D/g,'');
+ const link=shipmentLink(s);
+ const text=currentLang==='ar'
+  ?`شحنة رقم ${s.id}\nخط السير: ${s.route||''}\nالسائق: ${s.driver}\nالسيارة: ${s.vehicle}\nعدد نقاط التسليم: ${(s.stops||[]).length}\nإجمالي الكمية: ${total(s)} كرتونة\nافتح تفاصيل الشحنة من الرابط:\n${link}`
+  :`Shipment ${s.id}\nDriver: ${s.driver}\nVehicle: ${s.vehicle}\nTotal: ${total(s)} cartons\nOpen shipment details:\n${link}`;
+ window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`,'_blank');
+}
+function loadShipmentFromURL(){
+ const id=new URLSearchParams(location.search).get('shipment');
+ if(!id)return;
+ const s=shipments.find(x=>x.id===id);
+ if(s){activeShipment=s;go('driver');}
+ else{toast(currentLang==='ar'?'الشحنة غير موجودة على هذا الجهاز':'Shipment not found on this device');}
+}
+function openShipment(id){activeShipment=shipments.find(x=>x.id===id);renderDriver();go('driver')}
+
+function openShipment(id){
+ activeShipment=shipments.find(x=>x.id===id);
+ renderDriver();
+ go('driver');
+}
+
+function renderDriver(){
+ const s=activeShipment||shipments[0];
+ if(!s)return;
+
+ document.getElementById('driverShipmentNo').textContent=s.id;
+ document.getElementById('driverMeta').textContent=`${s.driver} — ${s.vehicle}${s.phone?' — '+s.phone:''}`;
+ document.getElementById('driverRoute').textContent=s.route||'';
+ document.getElementById('driverTotal').textContent=currentLang==='ar'?`${total(s)} كرتونة`:`${total(s)} Cartons`;
+ document.getElementById('driverStopsCount').textContent=(s.stops||[]).length;
+
+ document.getElementById('driverStops').innerHTML=(s.stops||[]).sort((a,b)=>a.order-b.order).map((stop,i)=>`
+   <div class="stop ${stop.status==='تم التسليم'?'done':''}" id="stop${i}">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+      <div>
+        <div class="muted">المحطة ${stop.order}</div>
+        <h4>${stop.customer} — ${stop.branch}</h4>
+      </div>
+      <span class="status ${stop.status==='تم التسليم'?'s-delivered':'s-pending'}">${stop.status}</span>
+    </div>
+
+    <div class="muted">${stop.address||''}</div>
+    ${stop.contact?`<div style="margin-top:6px">مسؤول الاستلام: <b>${stop.contact}</b></div>`:''}
+    ${stop.phone?`<div>الهاتف: <b>${stop.phone}</b></div>`:''}
+
+    ${(stop.items||[]).map(it=>`<div class="qty"><span>${it.name}</span><b>${it.qty} ${currentLang==='ar'?'كرتونة':'Cartons'}</b></div>`).join('')}
+
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-light" onclick="openMap(${i})">فتح الموقع</button>
+      <button class="btn btn-light" onclick="markArrived(${i})">تم الوصول</button>
+      <button class="btn btn-success" onclick="deliver(${i})">تأكيد التسليم</button>
+    </div>
+   </div>
+ `).join('');
+}
+
+function openMap(i){
+ const stop=(activeShipment.stops||[]).sort((a,b)=>a.order-b.order)[i];
+ if(stop&&stop.mapUrl){window.open(stop.mapUrl,'_blank')}
+ else{toast('لا يوجد لوكيشن مسجل لهذا الفرع')}
+}
+
+function markArrived(i){
+ const stop=(activeShipment.stops||[]).sort((a,b)=>a.order-b.order)[i];
+ if(stop){stop.status='تم الوصول';render();renderDriver();toast('تم تسجيل الوصول')}
+}
+
+function deliver(i){
+ const ordered=(activeShipment.stops||[]).sort((a,b)=>a.order-b.order);
+ const stop=ordered[i];
+ if(stop){stop.status='تم التسليم';render();renderDriver();toast('تم تسجيل التسليم ووقت الاستلام')}
+}
+function finishRoute(){
+ if(activeShipment){
+   const allDone=(activeShipment.stops||[]).every(x=>x.status==='تم التسليم');
+   activeShipment.status=allDone?'تم التسليم':'قيد التوزيع';
+   render();
+ }
+ toast('تم حفظ حالة خط السير وتحديث التقارير');
+ go('shipments');
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+document.getElementById('deliveryDate').value=new Date().toISOString().slice(0,10);
+
+const gpsVehicles={
+ 'أ ب ج 1234':{
+   status:'متحركة',speed:'72 كم/س',last:'منذ دقيقة',stop:'0 دقيقة',
+   shipment:'SH-ALEX-001',next:'Costa Coffee — المنشية',
+   location:'طريق القاهرة - الإسكندرية الصحراوي'
+ },
+ 'د هـ و 7842':{
+   status:'متحركة',speed:'48 كم/س',last:'منذ دقيقتين',stop:'0 دقيقة',
+   shipment:'SH-ALEX-002',next:'Starbucks — سيدي بشر',
+   location:'محور المحمودية - الإسكندرية'
+ },
+ 'س ص ع 5566':{
+   status:'متوقفة',speed:'0 كم/س',last:'منذ دقيقتين',stop:'38 دقيقة',
+   shipment:'SH-ALEX-003',next:'Costa Coffee — الورديان',
+   location:'منطقة كينج مريوط - الإسكندرية'
+ }
+};
+
+function selectVehicle(vehicle){
+ const v=gpsVehicles[vehicle];
+ if(!v)return;
+ document.getElementById('gpsVehicle').textContent=vehicle;
+ document.getElementById('gpsStatus').textContent=v.status;
+ document.getElementById('gpsSpeed').textContent=v.speed;
+ document.getElementById('gpsLastUpdate').textContent=v.last;
+ document.getElementById('gpsStopTime').textContent=v.stop;
+ document.getElementById('gpsShipment').textContent=v.shipment;
+ document.getElementById('gpsNextStop').innerHTML='<b>'+v.next+'</b>';
+ document.getElementById('gpsLocation').textContent=v.location;
+}
+
+function simulateGpsUpdate(){
+ const vehicle=document.getElementById('gpsVehicle').textContent;
+ const v=gpsVehicles[vehicle];
+ if(!v)return;
+ document.getElementById('gpsLastUpdate').textContent='الآن';
+ const now=new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+ document.getElementById('gpsHistory').insertAdjacentHTML('afterbegin',
+   `<tr><td>${now}</td><td>تم استقبال تحديث GPS</td><td>${v.location}</td></tr>`);
+ toast('تم تحديث موقع العربية من جهاز GPS التجريبي');
+}
+
+resetRouteForm();applyLanguage();setTimeout(loadShipmentFromURL,100);
+</script>
+</body>
+</html>
