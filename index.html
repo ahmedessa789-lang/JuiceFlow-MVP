@@ -39,16 +39,53 @@ function buildQuery(){let q=sb.from('product_production_review_v1').select('*',{
 async function loadProducts(){$('productBody').innerHTML='<tr><td colspan="11">جاري التحميل...</td></tr>';const{data,error,count}=await buildQuery().order('product_code',{ascending:true,nullsFirst:false}).range(page*PAGE_SIZE,page*PAGE_SIZE+PAGE_SIZE-1);if(error){$('productBody').innerHTML=`<tr><td colspan="11" style="color:#a01f1f">${esc(error.message)}</td></tr>`;return}totalFiltered=count||0;renderRows(data||[]);renderPager()}
 function renderRows(rows){if(!rows.length){$('productBody').innerHTML='<tr><td colspan="11">لا توجد نتائج</td></tr>';return}$('productBody').innerHTML=rows.map(r=>{const id=esc(r.product_id),m=r.production_mode||'unclassified',c=!!r.production_classification_confirmed;return `<tr data-id="${id}"><td><div class="code">${esc(r.product_code||'-')}</div><div class="tiny">${esc(r.barcode||'')}</div></td><td><strong>${esc(r.product_name||'-')}</strong><div class="muted">${esc(r.description||'')}</div><div class="tiny">${esc(r.product_family||'')}</div></td><td>${esc(r.original_size_text||'-')}</td><td>${r.parsed_volume_ml_candidate!=null?`<span class="badge b-info">${esc(r.parsed_volume_ml_candidate)} ml</span>`:'-'}</td><td><select class="mode"><option value="unclassified" ${m==='unclassified'?'selected':''}>Unclassified</option><option value="manufactured_liquid" ${m==='manufactured_liquid'?'selected':''}>Manufactured Liquid</option><option value="manufactured_unit" ${m==='manufactured_unit'?'selected':''}>Manufactured Unit</option><option value="stock_only" ${m==='stock_only'?'selected':''}>Stock Only</option></select></td><td><input class="volume" type="number" min="0.001" step="0.001" value="${r.production_volume_ml??''}" ${m==='manufactured_liquid'?'':'disabled'}></td><td><input class="unit" value="${esc(r.production_unit||'')}" ${m==='manufactured_unit'?'':'disabled'} placeholder="pcs / tray / pack"></td><td style="text-align:center"><input class="confirm" type="checkbox" style="width:auto" ${c?'checked':''}></td><td><input class="note" value="${esc(r.production_classification_note||'')}" placeholder="ملاحظة اختيارية"></td><td>${statusBadge(r.review_status)}</td><td><button class="primary saveBtn" onclick="saveRow('${id}')">حفظ</button><div class="save-state"></div></td></tr>`}).join('');document.querySelectorAll('tr[data-id]').forEach(tr=>{tr.querySelector('.mode').addEventListener('change',e=>{const m=e.target.value,v=tr.querySelector('.volume'),u=tr.querySelector('.unit');v.disabled=m!=='manufactured_liquid';u.disabled=m!=='manufactured_unit';if(m!=='manufactured_liquid')v.value='';if(m!=='manufactured_unit')u.value='';if(m==='unclassified')tr.querySelector('.confirm').checked=false})})}
 async function saveRow(id){const tr=document.querySelector(`tr[data-id="${CSS.escape(id)}"]`),btn=tr.querySelector('.saveBtn'),st=tr.querySelector('.save-state'),mode=tr.querySelector('.mode').value,vr=tr.querySelector('.volume').value.trim(),unit=tr.querySelector('.unit').value.trim(),note=tr.querySelector('.note').value.trim(),confirm=tr.querySelector('.confirm').checked,vol=vr===''?null:Number(vr);try{btn.disabled=true;st.textContent='جاري الحفظ...';st.style.color='#566176';const{error}=await sb.rpc('set_product_production_classification',{p_product_id:id,p_production_mode:mode,p_production_volume_ml:vol,p_production_unit:unit||null,p_note:note||null,p_confirm:confirm});if(error)throw error;st.textContent='تم الحفظ';st.style.color='#18703d';await refreshStats();await loadProducts()}catch(e){st.textContent=e.message||'فشل الحفظ';st.style.color='#a01f1f'}finally{btn.disabled=false}}
-async function refreshStats(){const{data,error}=await sb.from('product_production_review_v1').select('production_mode,production_classification_confirmed,review_status');if(error)return;const total=data.length,confirmed=data.filter(x=>x.production_classification_confirmed).length,liquid=data.filter(x=>x.production_mode==='manufactured_liquid'&&x.production_classification_confirmed).length,stock=data.filter(x=>x.production_mode==='stock_only'&&x.production_classification_confirmed).length;$('stTotal').textContent=total;$('stConfirmed').textContent=confirmed;$('stRemaining').textContent=total-confirmed;$('stLiquid').textContent=liquid;$('stStock').textContent=stock}
+async function refreshStats(){
+  const [reviewRes,suggRes]=await Promise.all([
+    sb.from('product_production_review_v1').select('production_mode,production_classification_confirmed,review_status'),
+    sb.from('product_production_suggestions_v1')
+      .select('product_id',{count:'exact',head:true})
+      .eq('confirmed',false)
+      .eq('suggestion_confidence','high')
+      .eq('suggested_mode','manufactured_liquid')
+  ]);
+  if(reviewRes.error){console.error(reviewRes.error);return}
+  const data=reviewRes.data||[];
+  const total=data.length,
+        confirmed=data.filter(x=>x.production_classification_confirmed).length,
+        liquid=data.filter(x=>x.production_mode==='manufactured_liquid'&&x.production_classification_confirmed).length,
+        stock=data.filter(x=>x.production_mode==='stock_only'&&x.production_classification_confirmed).length;
+  $('stTotal').textContent=total;
+  $('stConfirmed').textContent=confirmed;
+  $('stRemaining').textContent=total-confirmed;
+  $('stLiquid').textContent=liquid;
+  $('stStock').textContent=stock;
+  $('stHigh').textContent=suggRes.error?'!':(suggRes.count??0);
+}
 function renderPager(){const pages=Math.max(1,Math.ceil(totalFiltered/PAGE_SIZE));$('pageInfo').textContent=`صفحة ${page+1} من ${pages} • ${totalFiltered} نتيجة`;$('prevBtn').disabled=page<=0;$('nextBtn').disabled=page>=pages-1}
 async function refreshAll(){await Promise.all([refreshStats(),loadProducts()])}
 async function bulkConfirmHigh(){
-  const ready=Number($('stHigh').textContent||0);
-  if(!ready){alert('لا توجد اقتراحات موثوقة غير معتمدة حاليًا');return;}
-  if(!confirm(`سيتم اعتماد ${ready} منتجًا عالي الثقة كـ Manufactured Liquid باستخدام الأحجام المقترحة. المنتجات Medium وManual لن تتغير. هل تريد المتابعة؟`))return;
   const btn=$('bulkConfirmBtn');
   try{
-    btn.disabled=true;btn.textContent='جاري الاعتماد...';
+    btn.disabled=true;btn.textContent='جاري الفحص...';
+
+    const{count,error:countError}=await sb.from('product_production_suggestions_v1')
+      .select('product_id',{count:'exact',head:true})
+      .eq('confirmed',false)
+      .eq('suggestion_confidence','high')
+      .eq('suggested_mode','manufactured_liquid');
+
+    if(countError)throw countError;
+    const ready=count||0;
+
+    if(!ready){
+      alert('لا توجد اقتراحات موثوقة غير معتمدة حاليًا');
+      await refreshStats();
+      return;
+    }
+
+    if(!confirm(`سيتم اعتماد ${ready} منتجًا عالي الثقة كـ Manufactured Liquid باستخدام الأحجام المقترحة. المنتجات Medium وManual لن تتغير. هل تريد المتابعة؟`))return;
+
+    btn.textContent='جاري الاعتماد...';
     const{data,error}=await sb.rpc('confirm_high_confidence_product_suggestions');
     if(error)throw error;
     const n=Array.isArray(data)&&data.length?data[0].confirmed_products:data?.confirmed_products??data??0;
