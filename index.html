@@ -27,7 +27,7 @@ main{padding:22px;min-width:0}.topbar{display:flex;justify-content:space-between
 .badge{display:inline-block;border-radius:999px;padding:7px 11px;font-size:12px;background:#e8f2ff;color:#0b4588}
 .page{display:none}.page.active{display:block}.grid{display:grid;gap:15px}.grid-4{grid-template-columns:repeat(4,1fr)}.grid-3{grid-template-columns:repeat(3,1fr)}.grid-2{grid-template-columns:repeat(2,1fr)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 6px 20px rgba(15,23,42,.04);margin-bottom:15px}
-.stat strong{display:block;font-size:27px;margin-top:8px}.muted{color:var(--muted)}.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px;flex-wrap:wrap}
+.stat strong{display:block;font-size:27px;margin-top:8px}.stat.clickable{cursor:pointer;transition:.15s ease}.stat.clickable:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(18,102,195,.13);border-color:#bfd8f5}.muted{color:var(--muted)}.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px;flex-wrap:wrap}
 .btn{border:0;border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:700}.btn-primary{background:var(--primary);color:#fff}.btn-success{background:var(--green);color:#fff}.btn-light{background:#eef2f7;color:#26364d}.btn-danger{background:#fee2e2;color:#991b1b}.btn-warning{background:#fff7ed;color:#9a3412}.btn:disabled{opacity:.55;cursor:not-allowed}
 label{display:block;font-size:13px;color:#475569;margin-bottom:5px}input,select,textarea{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
 table{width:100%;border-collapse:collapse}th,td{padding:10px 8px;border-bottom:1px solid var(--line);font-size:13px;text-align:right;vertical-align:top}th{background:#f8fafc;color:#475569;position:sticky;top:0}
@@ -175,6 +175,13 @@ table{width:100%;border-collapse:collapse}th,td{padding:10px 8px;border-bottom:1
 </main>
 </div>
 
+<div id="detailModal" class="modal hidden">
+  <div class="modal-card" style="width:min(900px,100%)">
+    <div class="section-title"><strong id="detailTitle">التفاصيل</strong><button id="closeDetailBtn" class="btn btn-light">إغلاق</button></div>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
 <div id="configModal" class="modal hidden"><div class="modal-card"><h3>إعداد اتصال Supabase</h3><div class="alert alert-warn">استخدم Project URL وPublishable/anon key فقط. لا تستخدم Service Role Key.</div><label>Project URL</label><input id="cfgUrl"><label style="margin-top:10px">Publishable / anon key</label><textarea id="cfgAnon" rows="5"></textarea><div class="right" style="margin-top:12px"><button id="saveConfigBtn" class="btn btn-primary">حفظ</button><button id="closeConfigBtn" class="btn btn-light">إلغاء</button></div></div></div>
 
 <script>
@@ -244,11 +251,41 @@ async function countTable(table,filterFn=null){
 }
 async function loadDashboard(){
  const [orders,prod,wh,ships,notes,invs]=await Promise.all([
-  countTable('orders'),countTable('production_orders',q=>q.in('status',['new','in_progress'])),countTable('warehouse_orders',q=>q.in('status',['new','in_progress'])),countTable('shipments',q=>q.in('status',['ready','loaded','out_for_delivery'])),countTable('delivery_notes',q=>q.eq('status','signed_received')),countTable('invoices',q=>q.in('status',['draft','issued']))
+  countTable('orders'),
+  countTable('production_orders',q=>q.in('status',['new','in_progress'])),
+  countTable('warehouse_orders',q=>q.in('status',['new','in_progress'])),
+  countTable('shipments',q=>q.in('status',['ready','loaded','out_for_delivery'])),
+  countTable('delivery_notes',q=>q.eq('status','signed_received')),
+  countTable('invoices',q=>q.in('status',['draft','issued']))
  ]);
- const items=[['إجمالي الطلبات',orders],['إنتاج مفتوح',prod],['مخزن مفتوح',wh],['شحنات نشطة',ships],['أذون موقعة',notes],['فواتير',invs]];
- $('dashboardStats').innerHTML=items.map(x=>`<div class="card stat"><span class="muted">${x[0]}</span><strong>${x[1]??'-'}</strong></div>`).join('');
- $('dashboardFlow').innerHTML='<div class="toolbar"><span class="status st-ready">Orders</span> ← <span class="status st-progress">Production</span> ← <span class="status st-progress">Warehouse</span> ← <span class="status st-ready">Shipment</span> ← <span class="status st-done">Delivery Note</span> ← <span class="status st-done">Invoice</span></div>';
+ const items=[
+   ['إجمالي الطلبات',orders,'dailySheet'],
+   ['إنتاج مفتوح',prod,'production'],
+   ['مخزن مفتوح',wh,'warehouse'],
+   ['شحنات نشطة',ships,'loading'],
+   ['أذون موقعة',notes,'deliveryNote'],
+   ['فواتير',invs,'invoices']
+ ];
+ $('dashboardStats').innerHTML=items.map(x=>`
+   <div class="card stat clickable" onclick="showPage('${x[2]}')" title="فتح التفاصيل">
+     <span class="muted">${x[0]}</span>
+     <strong>${x[1]??'-'}</strong>
+     <div class="tiny muted" style="margin-top:7px">اضغط لفتح التفاصيل</div>
+   </div>`).join('');
+ $('dashboardFlow').innerHTML=`
+   <div class="toolbar">
+     <button class="btn btn-light" onclick="showPage('dailySheet')">Orders</button>
+     <span>←</span>
+     <button class="btn btn-light" onclick="showPage('production')">Production</button>
+     <span>←</span>
+     <button class="btn btn-light" onclick="showPage('warehouse')">Warehouse</button>
+     <span>←</span>
+     <button class="btn btn-light" onclick="showPage('loading')">Shipment</button>
+     <span>←</span>
+     <button class="btn btn-light" onclick="showPage('deliveryNote')">Delivery Note</button>
+     <span>←</span>
+     <button class="btn btn-light" onclick="showPage('invoices')">Invoice</button>
+   </div>`;
 }
 
 /* ---------- ORDER ENTRY ---------- */
@@ -351,7 +388,7 @@ async function stopDeliver(id){const receiver=prompt('اسم المستلم (ا�
 async function loadDeliveryNotes(){
  let q=sb.from('delivery_notes').select('id,delivery_note_no,delivery_date,status,signed,signed_ref,receiver_name,branches(branch_name,customers(name))').order('created_at',{ascending:false}).limit(100);const t=$('deliverySearch').value.trim();if(t)q=q.ilike('delivery_note_no',`%${t}%`);
  const{data,error}=await q;if(error){$('deliveryBody').innerHTML=`<tr><td colspan="6">${esc(error.message)}</td></tr>`;return}
- $('deliveryBody').innerHTML=(data||[]).map(d=>`<tr><td class="code">${esc(d.delivery_note_no)}</td><td>${esc(d.delivery_date)}</td><td>${esc(d.branches?.customers?.name||'')}<div class="muted tiny">${esc(d.branches?.branch_name||'')}</div></td><td>${statusPill(d.status)}</td><td>${d.signed?'✓ '+esc(d.signed_ref||''):'-'}</td><td>${d.status==='delivered'&&!d.signed?`<button class="btn btn-success" onclick="signNote('${d.id}')">استلام النسخة الموقعة</button>`:'-'}</td></tr>`).join('')||'<tr><td colspan="6">لا توجد أذون</td></tr>';
+ $('deliveryBody').innerHTML=(data||[]).map(d=>`<tr style="cursor:pointer" onclick="openDeliveryDetail('${d.id}')"><td class="code">${esc(d.delivery_note_no)}</td><td>${esc(d.delivery_date)}</td><td>${esc(d.branches?.customers?.name||'')}<div class="muted tiny">${esc(d.branches?.branch_name||'')}</div></td><td>${statusPill(d.status)}</td><td>${d.signed?'✓ '+esc(d.signed_ref||''):'-'}</td><td><button class="btn btn-light" onclick="event.stopPropagation();openDeliveryDetail('${d.id}')">فتح</button> ${d.status==='delivered'&&!d.signed?`<button class="btn btn-success" onclick="event.stopPropagation();signNote('${d.id}')">استلام النسخة الموقعة</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6">لا توجد أذون</td></tr>';
 }
 async function signNote(id){const ref=prompt('مرجع / رقم النسخة الموقعة (اختياري):','')||null;try{const{error}=await sb.rpc('receive_signed_delivery_note',{p_delivery_note_id:id,p_signed_ref:ref});if(error)throw error;loadDeliveryNotes()}catch(e){alert(e.message)}}
 
@@ -362,10 +399,78 @@ async function loadInvoices(){
   sb.from('invoices').select('id,invoice_no,invoice_month,status,subtotal,tax_amount,total_amount,companies(external_code,name)').order('created_at',{ascending:false}).limit(100)
  ]);
  $('invoiceCompany').innerHTML='<option value="">-- اختر الشركة --</option>'+(compRes.data||[]).map(c=>`<option value="${c.id}">${esc(c.name||c.external_code||c.id)}</option>`).join('');
- $('invoiceBody').innerHTML=(invRes.data||[]).map(i=>`<tr><td class="code">${esc(i.invoice_no)}</td><td>${esc(i.companies?.name||i.companies?.external_code||'')}</td><td>${esc(i.invoice_month)}</td><td>${statusPill(i.status)}</td><td>${Number(i.subtotal||0).toFixed(2)}</td><td>${Number(i.tax_amount||0).toFixed(2)}</td><td><strong>${Number(i.total_amount||0).toFixed(2)}</strong></td><td>${i.status==='draft'?`<button class="btn btn-success" onclick="issueInvoice('${i.id}')">إصدار</button>`:'-'}</td></tr>`).join('')||'<tr><td colspan="8">لا توجد فواتير</td></tr>';
+ $('invoiceBody').innerHTML=(invRes.data||[]).map(i=>`<tr style="cursor:pointer" onclick="openInvoiceDetail('${i.id}')"><td class="code">${esc(i.invoice_no)}</td><td>${esc(i.companies?.name||i.companies?.external_code||'')}</td><td>${esc(i.invoice_month)}</td><td>${statusPill(i.status)}</td><td>${Number(i.subtotal||0).toFixed(2)}</td><td>${Number(i.tax_amount||0).toFixed(2)}</td><td><strong>${Number(i.total_amount||0).toFixed(2)}</strong></td><td><button class="btn btn-light" onclick="event.stopPropagation();openInvoiceDetail('${i.id}')">فتح</button> ${i.status==='draft'?`<button class="btn btn-success" onclick="event.stopPropagation();issueInvoice('${i.id}')">إصدار</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8">لا توجد فواتير</td></tr>';
 }
 async function generateInvoice(){try{const company=$('invoiceCompany').value,month=$('invoiceMonth').value;if(!company||!month)throw new Error('اختر الشركة والشهر');const{data,error}=await sb.rpc('generate_monthly_invoice',{p_company_id:company,p_invoice_month:`${month}-01`,p_tax_amount:Number($('invoiceTax').value||0),p_notes:$('invoiceNotes').value.trim()||null});if(error)throw error;alert(`تم تجهيز المسودة ${data?.[0]?.invoice_no||''}`);loadInvoices()}catch(e){alert(e.message)}}
 async function issueInvoice(id){if(!confirm('إصدار الفاتورة؟ بعد الإصدار لن تكون Draft قابلة للتحديث.'))return;try{const{error}=await sb.rpc('issue_invoice',{p_invoice_id:id});if(error)throw error;loadInvoices()}catch(e){alert(e.message)}}
+
+
+/* ---------- DETAIL CARDS / ROW DETAILS ---------- */
+function openDetailModal(title,html){
+ $('detailTitle').textContent=title;
+ $('detailBody').innerHTML=html;
+ $('detailModal').classList.remove('hidden');
+}
+function closeDetailModal(){$('detailModal').classList.add('hidden')}
+
+async function openInvoiceDetail(id){
+ try{
+  openDetailModal('تفاصيل الفاتورة','<div class="muted">جاري التحميل...</div>');
+  const [invRes,lineRes,noteRes]=await Promise.all([
+    sb.from('invoices').select('id,invoice_no,invoice_month,invoice_date,status,subtotal,tax_amount,total_amount,notes,companies(external_code,name)').eq('id',id).single(),
+    sb.from('invoice_lines').select('id,quantity,unit_price,line_total,products(external_code,product_name,description),orders(order_no),delivery_notes(delivery_note_no)').eq('invoice_id',id).order('created_at'),
+    sb.from('invoice_delivery_notes').select('delivery_notes(id,delivery_note_no,delivery_date,status,signed,signed_ref,branches(branch_name,customers(name)))').eq('invoice_id',id)
+  ]);
+  if(invRes.error)throw invRes.error;
+  const i=invRes.data,lines=lineRes.data||[],notes=noteRes.data||[];
+  openDetailModal(`الفاتورة ${i.invoice_no}`,`
+    <div class="kpi-strip">
+      <div class="mini"><span class="muted">الشركة</span><strong>${esc(i.companies?.name||i.companies?.external_code||'-')}</strong></div>
+      <div class="mini"><span class="muted">الشهر</span><strong>${esc(i.invoice_month)}</strong></div>
+      <div class="mini"><span class="muted">الحالة</span><strong>${esc(i.status)}</strong></div>
+      <div class="mini"><span class="muted">الإجمالي</span><strong>${Number(i.total_amount||0).toFixed(2)}</strong></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <strong>أذون التسليم (${notes.length})</strong>
+      <div class="sheet-wrap"><table><thead><tr><th>الإذن</th><th>التاريخ</th><th>العميل / الفرع</th><th>الحالة</th><th>Signed</th></tr></thead>
+      <tbody>${notes.map(x=>{const d=x.delivery_notes||{};return `<tr><td class="code">${esc(d.delivery_note_no||'-')}</td><td>${esc(d.delivery_date||'')}</td><td>${esc(d.branches?.customers?.name||'')}<div class="tiny muted">${esc(d.branches?.branch_name||'')}</div></td><td>${statusPill(d.status)}</td><td>${d.signed?'✓ '+esc(d.signed_ref||''):'-'}</td></tr>`}).join('')||'<tr><td colspan="5">لا توجد أذون</td></tr>'}</tbody></table></div>
+    </div>
+    <div class="card">
+      <strong>بنود الفاتورة (${lines.length})</strong>
+      <div class="sheet-wrap"><table><thead><tr><th>الطلب</th><th>إذن التسليم</th><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+      <tbody>${lines.map(l=>`<tr><td>${esc(l.orders?.order_no||'')}</td><td>${esc(l.delivery_notes?.delivery_note_no||'')}</td><td>${esc(l.products?.external_code||'')} - ${esc(l.products?.product_name||l.products?.description||'')}</td><td>${Number(l.quantity||0)}</td><td>${Number(l.unit_price||0).toFixed(2)}</td><td>${Number(l.line_total||0).toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="6">لا توجد بنود</td></tr>'}</tbody></table></div>
+    </div>
+  `);
+ }catch(e){openDetailModal('تفاصيل الفاتورة',`<div class="alert alert-bad">${esc(e.message||'تعذر تحميل التفاصيل')}</div>`)}
+}
+
+async function openDeliveryDetail(id){
+ try{
+  openDetailModal('تفاصيل إذن التسليم','<div class="muted">جاري التحميل...</div>');
+  const [noteRes,lineRes]=await Promise.all([
+    sb.from('delivery_notes').select('id,delivery_note_no,delivery_date,status,signed,signed_ref,receiver_name,receiver_phone,notes,branches(branch_name,address,customers(name)),shipments(shipment_no)').eq('id',id).single(),
+    sb.from('delivery_note_lines').select('quantity,unit_price,line_total,products(external_code,product_name,description),orders(order_no)').eq('delivery_note_id',id).order('created_at')
+  ]);
+  if(noteRes.error)throw noteRes.error;
+  const d=noteRes.data,lines=lineRes.data||[];
+  openDetailModal(`إذن التسليم ${d.delivery_note_no}`,`
+    <div class="grid grid-3">
+      <div class="mini"><span class="muted">العميل</span><strong>${esc(d.branches?.customers?.name||'-')}</strong></div>
+      <div class="mini"><span class="muted">الفرع</span><strong>${esc(d.branches?.branch_name||'-')}</strong></div>
+      <div class="mini"><span class="muted">الشحنة</span><strong>${esc(d.shipments?.shipment_no||'-')}</strong></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div><strong>الحالة:</strong> ${statusPill(d.status)}</div>
+      <div style="margin-top:6px"><strong>المستلم:</strong> ${esc(d.receiver_name||'-')} ${d.receiver_phone?'• '+esc(d.receiver_phone):''}</div>
+      <div style="margin-top:6px"><strong>Signed:</strong> ${d.signed?'✓ '+esc(d.signed_ref||''):'لا'}</div>
+    </div>
+    <div class="card">
+      <div class="sheet-wrap"><table><thead><tr><th>الطلب</th><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
+      <tbody>${lines.map(l=>`<tr><td>${esc(l.orders?.order_no||'')}</td><td>${esc(l.products?.external_code||'')} - ${esc(l.products?.product_name||l.products?.description||'')}</td><td>${Number(l.quantity||0)}</td><td>${l.unit_price==null?'-':Number(l.unit_price).toFixed(2)}</td><td>${Number(l.line_total||0).toFixed(2)}</td></tr>`).join('')||'<tr><td colspan="5">لا توجد بنود</td></tr>'}</tbody></table></div>
+    </div>
+  `);
+ }catch(e){openDetailModal('تفاصيل إذن التسليم',`<div class="alert alert-bad">${esc(e.message||'تعذر تحميل التفاصيل')}</div>`)}
+}
 
 /* ---------- MASTER ---------- */
 async function loadMaster(){loadProductAdmin();loadDrivers();loadVehicles();loadUsers()}
@@ -376,7 +481,12 @@ async function loadProductAdmin(){
  $('productAdminBody').innerHTML=rows.map(r=>`<tr data-pid="${r.product_id}"><td class="code">${esc(r.product_code||'-')}</td><td>${esc(r.product_name||r.description||'-')}<div class="muted tiny">${esc(r.original_size_text||'')}</div></td><td><select class="pmode"><option value="unclassified" ${r.production_mode==='unclassified'?'selected':''}>Unclassified</option><option value="manufactured_liquid" ${r.production_mode==='manufactured_liquid'?'selected':''}>Manufactured Liquid</option><option value="manufactured_unit" ${r.production_mode==='manufactured_unit'?'selected':''}>Manufactured Unit</option><option value="stock_only" ${r.production_mode==='stock_only'?'selected':''}>Stock Only</option><option value="bundle" ${r.production_mode==='bundle'?'selected':''}>Bundle</option></select></td><td><input class="pvol" type="number" value="${r.production_volume_ml??''}" ${r.production_mode==='manufactured_liquid'?'':'disabled'}></td><td><input class="punit" value="${esc(r.production_unit||'')}" ${r.production_mode==='manufactured_unit'?'':'disabled'}></td><td><input class="pconfirm" type="checkbox" style="width:auto" ${r.production_classification_confirmed?'checked':''}></td><td>${r.production_mode==='bundle'?(bom[r.product_id]?`<span class="status st-done">${bom[r.product_id]} components</span>`:'<span class="status st-bad">BOM Missing</span>'):'-'}</td><td><input class="pnote" value="${esc(r.production_classification_note||'')}"></td><td><button class="btn btn-primary" onclick="saveProduct('${r.product_id}')">حفظ</button></td></tr>`).join('');
  document.querySelectorAll('tr[data-pid]').forEach(tr=>tr.querySelector('.pmode').onchange=e=>{const m=e.target.value;tr.querySelector('.pvol').disabled=m!=='manufactured_liquid';tr.querySelector('.punit').disabled=m!=='manufactured_unit'});
  productAdminTotal=count||0;const pages=Math.max(1,Math.ceil(productAdminTotal/PRODUCT_PAGE));$('productAdminPageInfo').textContent=`صفحة ${productAdminPage+1} من ${pages} • ${productAdminTotal} منتج`;$('productAdminPrev').disabled=productAdminPage===0;$('productAdminNext').disabled=productAdminPage>=pages-1;
- const{data:stats}=await sb.from('products').select('production_mode,production_classification_confirmed');const s=stats||[];$('productStats').innerHTML=[['الإجمالي',s.length],['Liquid',s.filter(x=>x.production_mode==='manufactured_liquid').length],['Unit',s.filter(x=>x.production_mode==='manufactured_unit').length],['Bundle',s.filter(x=>x.production_mode==='bundle').length]].map(x=>`<div class="card stat"><span class="muted">${x[0]}</span><strong>${x[1]}</strong></div>`).join('');
+ const{data:stats}=await sb.from('products').select('production_mode,production_classification_confirmed');const s=stats||[];$('productStats').innerHTML=[
+ ['الإجمالي',s.length,''],
+ ['Liquid',s.filter(x=>x.production_mode==='manufactured_liquid').length,'manufactured_liquid'],
+ ['Unit',s.filter(x=>x.production_mode==='manufactured_unit').length,'manufactured_unit'],
+ ['Bundle',s.filter(x=>x.production_mode==='bundle').length,'bundle']
+].map(x=>`<div class="card stat clickable" onclick="$('productModeFilter').value='${x[2]}';productAdminPage=0;loadProductAdmin()"><span class="muted">${x[0]}</span><strong>${x[1]}</strong><div class="tiny muted">اضغط للفتح</div></div>`).join('');
 }
 async function saveProduct(id){const tr=document.querySelector(`tr[data-pid="${CSS.escape(id)}"]`),mode=tr.querySelector('.pmode').value,vol=tr.querySelector('.pvol').value,unit=tr.querySelector('.punit').value,note=tr.querySelector('.pnote').value,confirm=tr.querySelector('.pconfirm').checked;try{const{error}=await sb.rpc('set_product_production_classification',{p_product_id:id,p_production_mode:mode,p_production_volume_ml:vol===''?null:Number(vol),p_production_unit:unit||null,p_note:note||null,p_confirm:confirm});if(error)throw error;loadProductAdmin()}catch(e){alert(e.message)}}
 async function loadDrivers(){const{data,error}=await sb.from('drivers').select('*').order('driver_name');$('driversBody').innerHTML=error?`<tr><td colspan="5">${esc(error.message)}</td></tr>`:(data||[]).map(d=>`<tr><td>${esc(d.driver_code||'')}</td><td>${esc(d.driver_name)}</td><td>${esc(d.phone||'')}</td><td>${esc(d.license_no||'')}</td><td>${d.active?'✓':'-'}</td></tr>`).join('')||'<tr><td colspan="5">لا توجد بيانات</td></tr>'}
@@ -384,7 +494,7 @@ async function loadVehicles(){const{data,error}=await sb.from('vehicles').select
 async function loadUsers(){const{data,error}=await sb.from('user_profiles').select('user_id,username,full_name,role,active').order('username');$('usersBody').innerHTML=error?`<tr><td colspan="4">${esc(error.message)}</td></tr>`:(data||[]).map(u=>`<tr><td class="code">${esc(u.username||'')}</td><td>${esc(u.full_name)}</td><td>${esc(u.role)}</td><td>${u.active?'✓':'-'}</td></tr>`).join('')}
 
 /* ---------- EVENTS ---------- */
-$('loginBtn').onclick=login;$('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')login()});$('configBtn').onclick=openConfig;$('closeConfigBtn').onclick=closeConfig;$('saveConfigBtn').onclick=()=>{const u=$('cfgUrl').value.trim(),k=$('cfgAnon').value.trim();if(!u||!k){alert('أدخل Project URL والمفتاح');return}localStorage.setItem('daily_needs_supabase_url',u);localStorage.setItem('daily_needs_supabase_anon',k);closeConfig();sb=null;initClient();alert('تم حفظ إعداد الاتصال')};$('logoutBtn').onclick=logout;$('globalRefresh').onclick=()=>loadPage(currentPage);
+$('closeDetailBtn').onclick=closeDetailModal;$('detailModal').addEventListener('click',e=>{if(e.target===$('detailModal'))closeDetailModal()});$('loginBtn').onclick=login;$('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')login()});$('configBtn').onclick=openConfig;$('closeConfigBtn').onclick=closeConfig;$('saveConfigBtn').onclick=()=>{const u=$('cfgUrl').value.trim(),k=$('cfgAnon').value.trim();if(!u||!k){alert('أدخل Project URL والمفتاح');return}localStorage.setItem('daily_needs_supabase_url',u);localStorage.setItem('daily_needs_supabase_anon',k);closeConfig();sb=null;initClient();alert('تم حفظ إعداد الاتصال')};$('logoutBtn').onclick=logout;$('globalRefresh').onclick=()=>loadPage(currentPage);
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
 $('orderDate').value=today();$('invoiceMonth').value=today().slice(0,7);
 $('branchSearch').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(async()=>renderBranchResults(await searchBranches($('branchSearch').value)),250)};
