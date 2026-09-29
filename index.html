@@ -1,204 +1,399 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Daily Needs - تصنيف المنتجات - Bundle Support</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Daily Needs | Manufacturing Workflow</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f5f7fb;color:#172033}.hidden{display:none!important}
-header{background:#0f2747;color:#fff;padding:16px 22px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}header h1{margin:0;font-size:21px}.sub{opacity:.8;font-size:12px;margin-top:4px}.head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-button{border:0;border-radius:8px;padding:10px 14px;cursor:pointer;font-weight:700}.primary{background:#1473e6;color:#fff}.secondary{background:#e8eef7;color:#163354}.danger{background:#ffeded;color:#a01f1f}button:disabled{opacity:.55;cursor:not-allowed}
-main{padding:20px;max-width:1500px;margin:auto}.card{background:#fff;border:1px solid #e1e6ef;border-radius:14px;padding:16px;box-shadow:0 3px 14px rgba(25,45,75,.05);margin-bottom:16px}
-.stats{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:10px}.stat{background:#fff;border:1px solid #e3e8f0;border-radius:12px;padding:14px}.stat .label{font-size:12px;color:#657286}.stat .value{font-size:25px;font-weight:800;margin-top:5px}
-.filters{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end}label{display:block;font-size:12px;font-weight:700;color:#566176;margin-bottom:6px}input,select,textarea{width:100%;border:1px solid #cfd7e4;border-radius:8px;padding:10px;background:#fff;font:inherit}input:focus,select:focus,textarea:focus{outline:2px solid #b7d5ff;border-color:#5c9df2}
-.table-wrap{overflow:auto;border:1px solid #e4e8ef;border-radius:12px}table{border-collapse:collapse;width:100%;min-width:1280px;background:#fff}th,td{padding:10px;border-bottom:1px solid #edf0f5;text-align:right;vertical-align:top}th{background:#f3f6fa;font-size:12px;position:sticky;top:0;z-index:1}td{font-size:13px}.code{font-weight:800;color:#183d69}.muted{color:#7a8597;font-size:12px}.tiny{font-size:11px;color:#7c8798}.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap}.b-warn{background:#fff3cf;color:#7d5d00}.b-ok{background:#e6f7ed;color:#126b38}.b-info{background:#e8f1ff;color:#165cb2}.b-gray{background:#eef1f5;color:#566176}.save-state{font-size:11px;margin-top:6px;min-height:15px}
-.pagination{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}.login-wrap{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#0f2747,#1d4f80)}.login-card{background:#fff;width:min(440px,100%);padding:24px;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.2)}.login-card h2{margin-top:0}.field{margin-bottom:12px}.msg{padding:10px 12px;border-radius:8px;margin:10px 0;font-size:13px}.error{background:#ffeded;color:#9b1c1c}.ok{background:#e8f7ed;color:#145d34}.config-note{background:#fff8df;color:#705500;padding:10px;border-radius:8px;font-size:12px;margin-bottom:12px}.modal{position:fixed;inset:0;background:rgba(10,20,35,.55);display:grid;place-items:center;padding:20px;z-index:50}.modal-card{background:white;width:min(520px,100%);border-radius:14px;padding:18px;max-height:90vh;overflow:auto}.modal-actions{display:flex;gap:8px;margin-top:14px}
-@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr}main{padding:12px}}
+:root{
+ --bg:#f4f7fb;--card:#fff;--text:#182033;--muted:#6b7280;--line:#e5e7eb;
+ --primary:#1266c3;--primary2:#0b4588;--green:#15803d;--yellow:#a16207;
+ --orange:#c2410c;--purple:#6d28d9;--red:#b91c1c;--soft:#eef6ff
+}
+*{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}.hidden{display:none!important}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#0b4588,#1266c3)}
+.login-card{width:min(440px,100%);background:#fff;border-radius:18px;padding:24px;box-shadow:0 22px 60px rgba(0,0,0,.25)}
+.login-card h1{margin:0 0 5px;color:#0b4588}.login-card .muted{margin-bottom:18px}
+.app{display:grid;grid-template-columns:265px 1fr;min-height:100vh}
+aside{background:linear-gradient(180deg,#0a4588,#1266c3);color:#fff;padding:20px 15px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;gap:11px;align-items:center;margin-bottom:24px}.logo{width:50px;height:50px;border-radius:16px;background:#fff;color:#1266c3;display:grid;place-items:center;font-size:22px;font-weight:800}
+.brand h1{font-size:20px;margin:0}.brand small{opacity:.8}
+nav button{width:100%;border:0;background:transparent;color:#fff;text-align:right;padding:12px 13px;border-radius:10px;margin:3px 0;cursor:pointer}
+nav button:hover,nav button.active{background:rgba(255,255,255,.16)}
+main{padding:22px;min-width:0}.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.topbar h2{margin:0}.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.badge{display:inline-block;border-radius:999px;padding:7px 11px;font-size:12px;background:#e8f2ff;color:#0b4588}
+.page{display:none}.page.active{display:block}.grid{display:grid;gap:15px}.grid-4{grid-template-columns:repeat(4,1fr)}.grid-3{grid-template-columns:repeat(3,1fr)}.grid-2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:17px;box-shadow:0 6px 20px rgba(15,23,42,.04);margin-bottom:15px}
+.stat strong{display:block;font-size:27px;margin-top:8px}.muted{color:var(--muted)}.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:13px;flex-wrap:wrap}
+.btn{border:0;border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:700}.btn-primary{background:var(--primary);color:#fff}.btn-success{background:var(--green);color:#fff}.btn-light{background:#eef2f7;color:#26364d}.btn-danger{background:#fee2e2;color:#991b1b}.btn-warning{background:#fff7ed;color:#9a3412}.btn:disabled{opacity:.55;cursor:not-allowed}
+label{display:block;font-size:13px;color:#475569;margin-bottom:5px}input,select,textarea{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff}
+table{width:100%;border-collapse:collapse}th,td{padding:10px 8px;border-bottom:1px solid var(--line);font-size:13px;text-align:right;vertical-align:top}th{background:#f8fafc;color:#475569;position:sticky;top:0}
+.status{display:inline-block;padding:5px 9px;border-radius:999px;font-size:12px}.st-new{background:#fff7ed;color:#9a3412}.st-progress{background:#eff6ff;color:#1d4ed8}.st-done{background:#ecfdf5;color:#166534}.st-wait{background:#fefce8;color:#854d0e}.st-ready{background:#f3e8ff;color:#6b21a8}.st-bad{background:#fee2e2;color:#991b1b}
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.full{grid-column:1/-1}
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.mini{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:12px}.mini strong{display:block;font-size:20px;margin-top:4px}
+.tabs{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}.tabs button.active{background:var(--primary);color:#fff}
+.sheet-wrap{overflow:auto;max-height:65vh}.sheet{min-width:980px}.sheet input,.sheet select{padding:7px 8px;border-radius:8px}
+.alert{padding:11px 13px;border-radius:10px;margin-bottom:12px}.alert-info{background:#eff6ff;color:#1e40af}.alert-ok{background:#ecfdf5;color:#166534}.alert-warn{background:#fff7ed;color:#9a3412}.alert-bad{background:#fee2e2;color:#991b1b}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.toolbar>*{min-width:150px}.toolbar .grow{flex:1;min-width:250px}
+.search-results{border:1px solid var(--line);border-radius:10px;max-height:220px;overflow:auto;background:#fff;margin-top:5px}.search-item{padding:9px 10px;border-bottom:1px solid var(--line);cursor:pointer}.search-item:hover{background:#f3f7fb}.search-item:last-child{border-bottom:0}
+.line-row{display:grid;grid-template-columns:2fr 110px 120px 80px;gap:8px;align-items:end;margin-bottom:8px}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.58);display:grid;place-items:center;padding:20px;z-index:60}.modal-card{background:#fff;width:min(650px,100%);border-radius:16px;padding:18px;max-height:90vh;overflow:auto}
+.right{display:flex;justify-content:flex-start;gap:8px}.nowrap{white-space:nowrap}.tiny{font-size:11px}.code{font-weight:800;color:#0b4588}
+.pager{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+@media(max-width:1050px){.app{grid-template-columns:1fr}aside{height:auto;position:relative}nav{display:flex;overflow:auto;gap:5px}nav button{min-width:165px}.grid-4,.grid-3,.grid-2,.form-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){main{padding:12px}.grid-4,.grid-3,.grid-2,.form-grid{grid-template-columns:1fr}.line-row{grid-template-columns:1fr 85px}.line-row .price,.line-row .remove{grid-column:auto}}
 </style>
-</head><body>
-<div id="loginScreen" class="login-wrap"><div class="login-card"><h2>Daily Needs</h2><div class="muted" style="margin-bottom:16px">دخول مدير النظام - تصنيف المنتجات</div><div id="configWarning" class="config-note hidden">يلزم إدخال إعدادات Supabase لأول مرة من زر "إعداد الاتصال".</div><div class="field"><label>اسم المستخدم</label><input id="loginUsername" autocomplete="username" placeholder="admin"></div><div class="field"><label>كلمة المرور</label><input id="loginPassword" type="password" autocomplete="current-password"></div><div id="loginMsg"></div><div style="display:flex;gap:8px"><button id="loginBtn" class="primary" style="flex:1">دخول</button><button id="configBtn" class="secondary">إعداد الاتصال</button></div></div></div>
-<div id="appScreen" class="hidden"><header><div><h1>تصنيف المنتجات للإنتاج</h1><div class="sub">Daily Needs • Admin Product Classification</div></div><div class="head-actions"><span id="userLabel"></span><button id="bulkConfirmBtn" class="primary">اعتماد الاقتراحات الموثوقة</button><button id="refreshBtn" class="secondary">تحديث</button><button id="logoutBtn" class="danger">خروج</button></div></header><main>
-<div class="stats"><div class="stat"><div class="label">إجمالي المنتجات</div><div id="stTotal" class="value">-</div></div><div class="stat"><div class="label">تم التأكيد</div><div id="stConfirmed" class="value">-</div></div><div class="stat"><div class="label">متبقي للتصنيف</div><div id="stRemaining" class="value">-</div></div><div class="stat"><div class="label">جاهز للاعتماد</div><div id="stHigh" class="value">-</div></div><div class="stat"><div class="label">Manufactured Liquid</div><div id="stLiquid" class="value">-</div></div><div class="stat"><div class="label">Stock Only</div><div id="stStock" class="value">-</div></div></div>
-<div class="card"><div class="filters"><div><label>بحث</label><input id="searchInput" placeholder="كود / اسم المنتج / الوصف / الباركود"></div><div><label>حالة المراجعة</label><select id="reviewFilter"><option value="all">الكل</option><option value="needs_classification">يحتاج تصنيف</option><option value="confirmed">تم التأكيد</option><option value="needs_volume">يحتاج حجم</option><option value="needs_unit">يحتاج وحدة</option><option value="needs_confirmation">يحتاج تأكيد</option></select></div><div><label>نوع التشغيل</label><select id="modeFilter"><option value="all">الكل</option><option value="unclassified">Unclassified</option><option value="manufactured_liquid">Manufactured Liquid</option><option value="manufactured_unit">Manufactured Unit</option><option value="stock_only">Stock Only</option><option value="bundle">Bundle</option></select></div><button id="clearFilters" class="secondary">مسح الفلاتر</button></div></div>
-<div class="card"><div class="table-wrap"><table><thead><tr><th>الكود</th><th>المنتج</th><th>الحجم الأصلي</th><th>اقتراح الحجم</th><th>نوع التشغيل</th><th>حجم الإنتاج ml</th><th>وحدة الإنتاج</th><th>تأكيد</th><th>ملاحظة</th><th>الحالة</th><th>حفظ</th></tr></thead><tbody id="productBody"></tbody></table></div><div class="pagination"><div id="pageInfo" class="muted"></div><div style="display:flex;gap:8px"><button id="prevBtn" class="secondary">السابق</button><button id="nextBtn" class="secondary">التالي</button></div></div></div>
-</main></div>
-<div id="configModal" class="modal hidden"><div class="modal-card"><h3 style="margin-top:0">إعداد اتصال Supabase</h3><div class="config-note">استخدم Project URL و Public anon key فقط. لا تستخدم Service Role Key داخل المتصفح.</div><div class="field"><label>Supabase Project URL</label><input id="cfgUrl" placeholder="https://xxxx.supabase.co"></div><div class="field"><label>Public anon key</label><textarea id="cfgAnon" rows="5"></textarea></div><div class="modal-actions"><button id="saveConfigBtn" class="primary">حفظ</button><button id="closeConfigBtn" class="secondary">إلغاء</button></div></div></div>
+</head>
+<body>
+
+<div id="loginScreen" class="login">
+  <div class="login-card">
+    <h1>Daily Needs</h1>
+    <div class="muted">Manufacturing Workflow System</div>
+    <div id="loginMsg"></div>
+    <div style="margin-bottom:12px"><label>اسم المستخدم</label><input id="loginUsername" autocomplete="username" placeholder="admin"></div>
+    <div style="margin-bottom:12px"><label>كلمة المرور</label><input id="loginPassword" type="password" autocomplete="current-password"></div>
+    <div style="display:flex;gap:8px"><button id="loginBtn" class="btn btn-primary" style="flex:1">دخول</button><button id="configBtn" class="btn btn-light">إعداد الاتصال</button></div>
+  </div>
+</div>
+
+<div id="appScreen" class="app hidden">
+<aside>
+  <div class="brand"><div class="logo">DN</div><div><h1>Daily Needs</h1><small id="roleText">Workflow</small></div></div>
+  <nav id="nav">
+    <button data-page="dashboard" data-roles="supervisor,admin">لوحة المتابعة</button>
+    <button data-page="dailySheet" data-roles="operator,supervisor,admin">طلبات اليوم</button>
+    <button data-page="planning" data-roles="supervisor,admin">التخطيط الآلي</button>
+    <button data-page="production" data-roles="production,supervisor,admin">إدارة الإنتاج</button>
+    <button data-page="warehouse" data-roles="warehouse,supervisor,admin">المخازن والتغليف</button>
+    <button data-page="loading" data-roles="warehouse,supervisor,admin">التحميل والشحنات</button>
+    <button data-page="driver" data-roles="driver,supervisor,admin">شاشة السائق</button>
+    <button data-page="deliveryNote" data-roles="operator,warehouse,driver,supervisor,admin">أذون التسليم</button>
+    <button data-page="invoices" data-roles="supervisor,admin">الفواتير الشهرية</button>
+    <button data-page="master" data-roles="admin">إعدادات النظام</button>
+  </nav>
+</aside>
+
+<main>
+  <div class="topbar">
+    <div><h2 id="pageTitle">Daily Needs</h2><div class="muted tiny" id="pageSub">Supabase Production</div></div>
+    <div class="top-actions"><span class="badge" id="userBadge"></span><button id="globalRefresh" class="btn btn-light">تحديث</button><button id="logoutBtn" class="btn btn-danger">خروج</button></div>
+  </div>
+
+  <section id="dashboard" class="page">
+    <div class="grid grid-4" id="dashboardStats"></div>
+    <div class="card"><div class="section-title"><strong>حالة التشغيل الحالية</strong><span class="muted">أرقام مباشرة من قاعدة البيانات</span></div><div id="dashboardFlow"></div></div>
+  </section>
+
+  <section id="dailySheet" class="page">
+    <div class="card">
+      <div class="section-title"><strong>إنشاء طلب جديد</strong><span class="muted">ابحث عن الفرع والمنتجات بدل القوائم الطويلة</span></div>
+      <div class="form-grid">
+        <div class="full"><label>بحث عن الفرع / العميل / الكود / المنطقة</label><input id="branchSearch" placeholder="ابدأ بكتابة الاسم أو كود الفرع"><div id="branchResults" class="search-results hidden"></div></div>
+        <div><label>الفرع المحدد</label><input id="selectedBranchLabel" readonly></div>
+        <div><label>تاريخ الطلب</label><input id="orderDate" type="date"></div>
+        <div class="full"><label>ملاحظات الطلب</label><textarea id="orderNotes" rows="2"></textarea></div>
+      </div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+      <label>بحث عن منتج</label>
+      <input id="productSearch" placeholder="كود / اسم / وصف / باركود">
+      <div id="productResults" class="search-results hidden"></div>
+      <div id="orderLines" style="margin-top:12px"></div>
+      <div class="right" style="margin-top:12px"><button id="submitOrderBtn" class="btn btn-primary">حفظ واعتماد الطلب</button></div>
+    </div>
+    <div class="card"><div class="section-title"><strong>أحدث الطلبات</strong><input id="ordersSearch" style="max-width:320px" placeholder="بحث برقم الطلب"></div><div class="sheet-wrap"><table><thead><tr><th>رقم الطلب</th><th>التاريخ</th><th>العميل / الفرع</th><th>الحالة</th><th>عدد البنود</th></tr></thead><tbody id="ordersBody"></tbody></table></div></div>
+  </section>
+
+  <section id="planning" class="page">
+    <div class="card"><div class="section-title"><strong>طلبات جاهزة للتخطيط</strong><button id="createPlanBtn" class="btn btn-primary">إنشاء خطة للطلبات المحددة</button></div><div class="alert alert-info">أي Bundle بدون BOM سيتم إيقافه تلقائيًا من قاعدة البيانات.</div><div class="sheet-wrap"><table><thead><tr><th></th><th>رقم الطلب</th><th>التاريخ</th><th>الفرع</th><th>الحالة</th></tr></thead><tbody id="planningOrdersBody"></tbody></table></div></div>
+    <div class="card"><div class="section-title"><strong>أحدث خطط التشغيل</strong></div><div class="sheet-wrap"><table><thead><tr><th>Production</th><th>الحالة</th><th>Warehouse</th><th>الحالة</th><th>عدد الطلبات</th></tr></thead><tbody id="plansBody"></tbody></table></div></div>
+  </section>
+
+  <section id="production" class="page">
+    <div class="card"><div class="section-title"><strong>أوامر الإنتاج</strong><input id="productionSearch" style="max-width:300px" placeholder="بحث برقم أمر الإنتاج"></div><div id="productionList"></div></div>
+  </section>
+
+  <section id="warehouse" class="page">
+    <div class="card"><div class="section-title"><strong>أوامر المخزن والتجهيز</strong></div><div id="warehouseList"></div></div>
+  </section>
+
+  <section id="loading" class="page">
+    <div class="card">
+      <div class="section-title"><strong>إنشاء شحنة</strong><span class="muted">من الطلبات التي أنهت المخزن</span></div>
+      <div class="form-grid">
+        <div><label>خط السير</label><input id="shipmentRoute" placeholder="مثال: أكتوبر"></div>
+        <div><label>العربة</label><select id="shipmentVehicle"></select></div>
+        <div><label>السائق</label><select id="shipmentDriver"></select></div>
+        <div><label>هاتف السائق</label><input id="shipmentDriverPhone"></div>
+        <div class="full"><label>ملاحظات</label><input id="shipmentNotes"></div>
+      </div>
+      <div class="sheet-wrap" style="margin-top:12px"><table><thead><tr><th></th><th>رقم الطلب</th><th>الفرع</th><th>خط السير</th></tr></thead><tbody id="shipReadyOrdersBody"></tbody></table></div>
+      <div class="right" style="margin-top:12px"><button id="createShipmentBtn" class="btn btn-primary">إنشاء الشحنة</button></div>
+    </div>
+    <div class="card"><div class="section-title"><strong>الشحنات</strong></div><div id="shipmentsList"></div></div>
+  </section>
+
+  <section id="driver" class="page">
+    <div class="card"><div class="section-title"><strong>الشحنات الخارجة للتسليم</strong></div><div id="driverShipments"></div></div>
+  </section>
+
+  <section id="deliveryNote" class="page">
+    <div class="card"><div class="section-title"><strong>أذون التسليم</strong><input id="deliverySearch" style="max-width:300px" placeholder="بحث برقم إذن التسليم"></div><div class="sheet-wrap"><table><thead><tr><th>الإذن</th><th>التاريخ</th><th>العميل / الفرع</th><th>الحالة</th><th>Signed</th><th>إجراء</th></tr></thead><tbody id="deliveryBody"></tbody></table></div></div>
+  </section>
+
+  <section id="invoices" class="page">
+    <div class="card">
+      <div class="section-title"><strong>إنشاء / تحديث مسودة فاتورة شهرية</strong></div>
+      <div class="form-grid">
+        <div><label>الشركة</label><select id="invoiceCompany"></select></div>
+        <div><label>الشهر</label><input id="invoiceMonth" type="month"></div>
+        <div><label>قيمة الضريبة</label><input id="invoiceTax" type="number" min="0" step="0.01" value="0"></div>
+        <div><label>ملاحظة</label><input id="invoiceNotes"></div>
+      </div>
+      <div class="right" style="margin-top:12px"><button id="generateInvoiceBtn" class="btn btn-primary">إنشاء / تحديث Draft</button></div>
+    </div>
+    <div class="card"><div class="section-title"><strong>الفواتير</strong></div><div class="sheet-wrap"><table><thead><tr><th>رقم الفاتورة</th><th>الشركة</th><th>الشهر</th><th>الحالة</th><th>Subtotal</th><th>Tax</th><th>Total</th><th>إجراء</th></tr></thead><tbody id="invoiceBody"></tbody></table></div></div>
+  </section>
+
+  <section id="master" class="page">
+    <div class="tabs"><button class="btn btn-light active" data-mastertab="products">تصنيف المنتجات</button><button class="btn btn-light" data-mastertab="drivers">السائقون</button><button class="btn btn-light" data-mastertab="vehicles">العربيات</button><button class="btn btn-light" data-mastertab="users">المستخدمون</button></div>
+    <div id="master-products" class="mastertab">
+      <div class="grid grid-4" id="productStats"></div>
+      <div class="card">
+        <div class="toolbar"><input id="productAdminSearch" class="grow" placeholder="بحث بالكود / الاسم / الوصف"><select id="productModeFilter"><option value="">كل الأنواع</option><option value="manufactured_liquid">Manufactured Liquid</option><option value="manufactured_unit">Manufactured Unit</option><option value="stock_only">Stock Only</option><option value="bundle">Bundle</option></select><button id="productAdminRefresh" class="btn btn-light">تحديث</button></div>
+        <div class="sheet-wrap" style="margin-top:12px"><table class="sheet"><thead><tr><th>الكود</th><th>المنتج</th><th>نوع التشغيل</th><th>Volume ml</th><th>Unit</th><th>Confirmed</th><th>BOM</th><th>ملاحظة</th><th>حفظ</th></tr></thead><tbody id="productAdminBody"></tbody></table></div>
+        <div class="pager"><span id="productAdminPageInfo" class="muted"></span><div><button id="productAdminPrev" class="btn btn-light">السابق</button> <button id="productAdminNext" class="btn btn-light">التالي</button></div></div>
+      </div>
+    </div>
+    <div id="master-drivers" class="mastertab hidden"><div class="card"><div class="section-title"><strong>السائقون</strong><span class="muted">Master Data</span></div><div class="sheet-wrap"><table><thead><tr><th>الكود</th><th>الاسم</th><th>الهاتف</th><th>الرخصة</th><th>نشط</th></tr></thead><tbody id="driversBody"></tbody></table></div></div></div>
+    <div id="master-vehicles" class="mastertab hidden"><div class="card"><div class="section-title"><strong>العربيات</strong><span class="muted">Master Data</span></div><div class="sheet-wrap"><table><thead><tr><th>الكود</th><th>اللوحة</th><th>الاسم</th><th>النوع</th><th>نشط</th></tr></thead><tbody id="vehiclesBody"></tbody></table></div></div></div>
+    <div id="master-users" class="mastertab hidden"><div class="card"><div class="section-title"><strong>المستخدمون</strong></div><div class="alert alert-info">النظام يستخدم Username + Password؛ البريد الداخلي تقني فقط وغير ظاهر للمستخدم.</div><div class="sheet-wrap"><table><thead><tr><th>Username</th><th>الاسم</th><th>Role</th><th>Active</th></tr></thead><tbody id="usersBody"></tbody></table></div></div></div>
+  </section>
+</main>
+</div>
+
+<div id="configModal" class="modal hidden"><div class="modal-card"><h3>إعداد اتصال Supabase</h3><div class="alert alert-warn">استخدم Project URL وPublishable/anon key فقط. لا تستخدم Service Role Key.</div><label>Project URL</label><input id="cfgUrl"><label style="margin-top:10px">Publishable / anon key</label><textarea id="cfgAnon" rows="5"></textarea><div class="right" style="margin-top:12px"><button id="saveConfigBtn" class="btn btn-primary">حفظ</button><button id="closeConfigBtn" class="btn btn-light">إلغاء</button></div></div></div>
+
 <script>
-const PAGE_SIZE=20;let sb=null,page=0,totalFiltered=0,searchTimer=null;const $=id=>document.getElementById(id);const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-function getConfig(){return{url:localStorage.getItem('daily_needs_supabase_url')||'',anon:localStorage.getItem('daily_needs_supabase_anon')||''}}
-function initClient(){const c=getConfig();if(!c.url||!c.anon)return false;sb=supabase.createClient(c.url,c.anon,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});return true}
-function openConfig(){const c=getConfig();$('cfgUrl').value=c.url;$('cfgAnon').value=c.anon;$('configModal').classList.remove('hidden')}function closeConfig(){$('configModal').classList.add('hidden')}
-function showLoginMsg(t,ok=false){$('loginMsg').innerHTML=t?`<div class="msg ${ok?'ok':'error'}">${esc(t)}</div>`:''}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const today=()=>new Date().toISOString().slice(0,10);
+let sb=null,currentUser=null,currentRole=null,currentPage=null;
+let selectedBranch=null,orderLines=[],searchTimer=null,productAdminPage=0,productAdminTotal=0;
+const PRODUCT_PAGE=20;
+
+function cfg(){return{url:localStorage.getItem('daily_needs_supabase_url')||'',key:localStorage.getItem('daily_needs_supabase_anon')||''}}
+function initClient(){const c=cfg();if(!c.url||!c.key)return false;sb=supabase.createClient(c.url,c.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});return true}
 function internalEmail(u){u=String(u||'').trim().toLowerCase();if(!/^[a-z0-9._-]+$/.test(u))throw new Error('اسم المستخدم يحتوي على حروف غير مسموحة');return `${u}@dailyneeds.local`}
-function statusBadge(s){const m={confirmed:['تم التأكيد','b-ok'],needs_classification:['يحتاج تصنيف','b-warn'],needs_volume:['يحتاج حجم','b-warn'],needs_unit:['يحتاج وحدة','b-warn'],needs_confirmation:['يحتاج تأكيد','b-info']}[s]||[s,'b-gray'];return `<span class="badge ${m[1]}">${esc(m[0])}</span>`}
-async function login(){try{showLoginMsg('');if(!sb&&!initClient()){$('configWarning').classList.remove('hidden');openConfig();return}const u=$('loginUsername').value.trim(),p=$('loginPassword').value;if(!u||!p)throw new Error('اكتب اسم المستخدم وكلمة المرور');$('loginBtn').disabled=true;const{error}=await sb.auth.signInWithPassword({email:internalEmail(u),password:p});if(error)throw error;const{data:role,error:re}=await sb.rpc('current_app_role');if(re)throw re;if(role!=='admin'){await sb.auth.signOut();throw new Error('هذه الشاشة متاحة لمدير النظام فقط')}await enterApp(u)}catch(e){showLoginMsg(e.message||'تعذر تسجيل الدخول')}finally{$('loginBtn').disabled=false}}
-async function enterApp(u){$('loginScreen').classList.add('hidden');$('appScreen').classList.remove('hidden');$('userLabel').textContent=`المستخدم: ${u||'admin'}`;await refreshAll()}
-async function restoreSession(){if(!initClient()){$('configWarning').classList.remove('hidden');return}const{data}=await sb.auth.getSession();if(!data.session)return;const{data:role,error}=await sb.rpc('current_app_role');if(error||role!=='admin'){await sb.auth.signOut();return}let e=data.session.user.email||'';await enterApp(e.endsWith('@dailyneeds.local')?e.replace('@dailyneeds.local',''):e)}
+function msg(el,text,type='bad'){el.innerHTML=text?`<div class="alert alert-${type}">${esc(text)}</div>`:''}
+function statusClass(s){if(['completed','delivered','signed_received','issued','invoiced','warehouse_done'].includes(s))return'st-done';if(['in_progress','in_production','out_for_delivery','loaded','arrived'].includes(s))return'st-progress';if(['ready','ready_to_load','approved'].includes(s))return'st-ready';if(['cancelled','failed'].includes(s))return'st-bad';return'st-new'}
+function statusPill(s){return `<span class="status ${statusClass(s)}">${esc(s||'-')}</span>`}
+function openConfig(){const c=cfg();$('cfgUrl').value=c.url;$('cfgAnon').value=c.key;$('configModal').classList.remove('hidden')}
+function closeConfig(){$('configModal').classList.add('hidden')}
+
+async function login(){
+ try{
+  msg($('loginMsg'),'');
+  if(!sb&&!initClient()){openConfig();return}
+  const u=$('loginUsername').value.trim(),p=$('loginPassword').value;
+  if(!u||!p)throw new Error('اكتب اسم المستخدم وكلمة المرور');
+  $('loginBtn').disabled=true;
+  const{data,error}=await sb.auth.signInWithPassword({email:internalEmail(u),password:p});if(error)throw error;
+  const{data:role,error:re}=await sb.rpc('current_app_role');if(re)throw re;if(!role)throw new Error('الحساب غير مربوط بمستخدم نشط في النظام');
+  currentUser=data.user;currentRole=role;enterApp(u);
+ }catch(e){msg($('loginMsg'),e.message||'تعذر تسجيل الدخول')}
+ finally{$('loginBtn').disabled=false}
+}
+async function restoreSession(){
+ if(!initClient())return;
+ const{data}=await sb.auth.getSession();if(!data.session)return;
+ const{data:role,error}=await sb.rpc('current_app_role');if(error||!role){await sb.auth.signOut();return}
+ currentUser=data.session.user;currentRole=role;
+ const email=currentUser.email||'',u=email.endsWith('@dailyneeds.local')?email.replace('@dailyneeds.local',''):email;
+ enterApp(u);
+}
+function enterApp(username){
+ $('loginScreen').classList.add('hidden');$('appScreen').classList.remove('hidden');
+ $('userBadge').textContent=`${username} • ${currentRole}`;$('roleText').textContent=`Role: ${currentRole}`;
+ document.querySelectorAll('#nav button').forEach(b=>{const roles=b.dataset.roles.split(',');b.classList.toggle('hidden',!roles.includes(currentRole))});
+ const first=[...document.querySelectorAll('#nav button:not(.hidden)')][0];if(first)showPage(first.dataset.page);
+}
 async function logout(){if(sb)await sb.auth.signOut();location.reload()}
-function buildQuery(){let q=sb.from('product_production_review_v1').select('*',{count:'exact'});const t=$('searchInput').value.trim();if(t){const safe=t.replace(/[(),]/g,' ');q=q.or(`product_code.ilike.%${safe}%,product_name.ilike.%${safe}%,description.ilike.%${safe}%,barcode.ilike.%${safe}%`)}const rf=$('reviewFilter').value;if(rf!=='all')q=q.eq('review_status',rf);const mf=$('modeFilter').value;if(mf!=='all')q=q.eq('production_mode',mf);return q}
-async function loadProducts(){
-  $('productBody').innerHTML='<tr><td colspan="11">جاري التحميل...</td></tr>';
-  const{data,error,count}=await buildQuery().order('product_code',{ascending:true,nullsFirst:false}).range(page*PAGE_SIZE,page*PAGE_SIZE+PAGE_SIZE-1);
-  if(error){
-    $('productBody').innerHTML=`<tr><td colspan="11" style="color:#a01f1f">${esc(error.message)}</td></tr>`;
-    return;
-  }
-  const rows=data||[];
-  const bundleIds=rows.filter(r=>r.production_mode==='bundle').map(r=>r.product_id);
-  if(bundleIds.length){
-    const{data:parts,error:partsErr}=await sb.from('product_bundle_components').select('bundle_product_id').in('bundle_product_id',bundleIds);
-    if(!partsErr){
-      const counts={};
-      (parts||[]).forEach(x=>counts[x.bundle_product_id]=(counts[x.bundle_product_id]||0)+1);
-      rows.forEach(r=>{if(r.production_mode==='bundle')r.bundle_component_count=counts[r.product_id]||0});
-    }else{
-      rows.forEach(r=>{if(r.production_mode==='bundle')r.bundle_component_count=null});
-    }
-  }
-  totalFiltered=count||0;
-  renderRows(rows);
-  renderPager();
+function showPage(page){
+ currentPage=page;document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===page));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+ const titles={dashboard:'لوحة المتابعة',dailySheet:'طلبات اليوم',planning:'التخطيط الآلي',production:'إدارة الإنتاج',warehouse:'المخازن والتغليف',loading:'التحميل والشحنات',driver:'شاشة السائق',deliveryNote:'أذون التسليم',invoices:'الفواتير الشهرية',master:'إعدادات النظام'};
+ $('pageTitle').textContent=titles[page]||'Daily Needs';loadPage(page);
 }
-function renderRows(rows){
-  if(!rows.length){
-    $('productBody').innerHTML='<tr><td colspan="11">لا توجد نتائج</td></tr>';
-    return;
-  }
-
-  $('productBody').innerHTML=rows.map(r=>{
-    const id=esc(r.product_id),
-          m=r.production_mode||'unclassified',
-          c=!!r.production_classification_confirmed,
-          bundleMissing=(m==='bundle' && r.bundle_component_count===0),
-          bundleUnknown=(m==='bundle' && r.bundle_component_count==null);
-
-    let rowStatus=statusBadge(r.review_status);
-    if(bundleMissing){
-      rowStatus='<span class="badge b-warn">BOM Missing</span>';
-    }else if(m==='bundle' && !bundleUnknown){
-      rowStatus=`<span class="badge b-ok">Bundle BOM: ${esc(r.bundle_component_count)}</span>`;
-    }else if(bundleUnknown){
-      rowStatus='<span class="badge b-gray">Bundle BOM ?</span>';
-    }
-
-    const noteValue = r.production_classification_note || '';
-
-    return `<tr data-id="${id}">
-      <td>
-        <div class="code">${esc(r.product_code||'-')}</div>
-        <div class="tiny">${esc(r.barcode||'')}</div>
-      </td>
-      <td>
-        <strong>${esc(r.product_name||'-')}</strong>
-        <div class="muted">${esc(r.description||'')}</div>
-        <div class="tiny">${esc(r.product_family||'')}</div>
-      </td>
-      <td>${esc(r.original_size_text||'-')}</td>
-      <td>${r.parsed_volume_ml_candidate!=null?`<span class="badge b-info">${esc(r.parsed_volume_ml_candidate)} ml</span>`:'-'}</td>
-      <td>
-        <select class="mode">
-          <option value="unclassified" ${m==='unclassified'?'selected':''}>Unclassified</option>
-          <option value="manufactured_liquid" ${m==='manufactured_liquid'?'selected':''}>Manufactured Liquid</option>
-          <option value="manufactured_unit" ${m==='manufactured_unit'?'selected':''}>Manufactured Unit</option>
-          <option value="stock_only" ${m==='stock_only'?'selected':''}>Stock Only</option>
-          <option value="bundle" ${m==='bundle'?'selected':''}>Bundle</option>
-        </select>
-      </td>
-      <td>
-        <input class="volume" type="number" min="0.001" step="0.001"
-          value="${r.production_volume_ml??''}"
-          ${m==='manufactured_liquid'?'':'disabled'}>
-      </td>
-      <td>
-        <input class="unit"
-          value="${esc(r.production_unit||'')}"
-          ${m==='manufactured_unit'?'':'disabled'}
-          placeholder="pcs / tray / pack">
-      </td>
-      <td style="text-align:center">
-        <input class="confirm" type="checkbox" style="width:auto" ${c?'checked':''}>
-      </td>
-      <td>
-        <input class="note" value="${esc(noteValue)}" placeholder="ملاحظة اختيارية">
-        ${bundleMissing?'<div class="tiny" style="color:#9a6700;margin-top:5px">تم تصنيف المنتج Bundle لكن مكوناته لم تُعرّف بعد، لذلك التخطيط متوقف له.</div>':''}
-      </td>
-      <td>${rowStatus}</td>
-      <td>
-        <button class="primary saveBtn" onclick="saveRow('${id}')">حفظ</button>
-        <div class="save-state"></div>
-      </td>
-    </tr>`;
-  }).join('');
-
-  document.querySelectorAll('tr[data-id]').forEach(tr=>{
-    tr.querySelector('.mode').addEventListener('change',e=>{
-      const m=e.target.value,
-            v=tr.querySelector('.volume'),
-            u=tr.querySelector('.unit');
-      v.disabled=m!=='manufactured_liquid';
-      u.disabled=m!=='manufactured_unit';
-      if(m!=='manufactured_liquid')v.value='';
-      if(m!=='manufactured_unit')u.value='';
-      if(m==='unclassified')tr.querySelector('.confirm').checked=false;
-    });
-  });
+async function loadPage(p){
+ if(p==='dashboard')return loadDashboard();
+ if(p==='dailySheet')return loadOrders();
+ if(p==='planning')return loadPlanning();
+ if(p==='production')return loadProduction();
+ if(p==='warehouse')return loadWarehouse();
+ if(p==='loading')return loadLoading();
+ if(p==='driver')return loadDriver();
+ if(p==='deliveryNote')return loadDeliveryNotes();
+ if(p==='invoices')return loadInvoices();
+ if(p==='master')return loadMaster();
 }
-async function saveRow(id){const tr=document.querySelector(`tr[data-id="${CSS.escape(id)}"]`),btn=tr.querySelector('.saveBtn'),st=tr.querySelector('.save-state'),mode=tr.querySelector('.mode').value,vr=tr.querySelector('.volume').value.trim(),unit=tr.querySelector('.unit').value.trim(),note=tr.querySelector('.note').value.trim(),confirm=tr.querySelector('.confirm').checked,vol=vr===''?null:Number(vr);try{btn.disabled=true;st.textContent='جاري الحفظ...';st.style.color='#566176';const{error}=await sb.rpc('set_product_production_classification',{p_product_id:id,p_production_mode:mode,p_production_volume_ml:vol,p_production_unit:unit||null,p_note:note||null,p_confirm:confirm});if(error)throw error;st.textContent='تم الحفظ';st.style.color='#18703d';await refreshStats();await loadProducts()}catch(e){st.textContent=e.message||'فشل الحفظ';st.style.color='#a01f1f'}finally{btn.disabled=false}}
-async function refreshStats(){
-  const [reviewRes,suggRes]=await Promise.all([
-    sb.from('product_production_review_v1').select('production_mode,production_classification_confirmed,review_status'),
-    sb.from('product_production_suggestions_v1')
-      .select('product_id',{count:'exact',head:true})
-      .eq('confirmed',false)
-      .eq('suggestion_confidence','high')
-      .eq('suggested_mode','manufactured_liquid')
-  ]);
-  if(reviewRes.error){console.error(reviewRes.error);return}
-  const data=reviewRes.data||[];
-  const total=data.length,
-        confirmed=data.filter(x=>x.production_classification_confirmed).length,
-        liquid=data.filter(x=>x.production_mode==='manufactured_liquid'&&x.production_classification_confirmed).length,
-        stock=data.filter(x=>x.production_mode==='stock_only'&&x.production_classification_confirmed).length;
-  $('stTotal').textContent=total;
-  $('stConfirmed').textContent=confirmed;
-  $('stRemaining').textContent=total-confirmed;
-  $('stLiquid').textContent=liquid;
-  $('stStock').textContent=stock;
-  $('stHigh').textContent=suggRes.error?'!':(suggRes.count??0);
+async function countTable(table,filterFn=null){
+ let q=sb.from(table).select('*',{count:'exact',head:true});if(filterFn)q=filterFn(q);const{count,error}=await q;return error?null:count;
 }
-function renderPager(){const pages=Math.max(1,Math.ceil(totalFiltered/PAGE_SIZE));$('pageInfo').textContent=`صفحة ${page+1} من ${pages} • ${totalFiltered} نتيجة`;$('prevBtn').disabled=page<=0;$('nextBtn').disabled=page>=pages-1}
-async function refreshAll(){await Promise.all([refreshStats(),loadProducts()])}
-async function bulkConfirmHigh(){
-  const btn=$('bulkConfirmBtn');
-  try{
-    btn.disabled=true;btn.textContent='جاري الفحص...';
-
-    const{count,error:countError}=await sb.from('product_production_suggestions_v1')
-      .select('product_id',{count:'exact',head:true})
-      .eq('confirmed',false)
-      .eq('suggestion_confidence','high')
-      .eq('suggested_mode','manufactured_liquid');
-
-    if(countError)throw countError;
-    const ready=count||0;
-
-    if(!ready){
-      alert('لا توجد اقتراحات موثوقة غير معتمدة حاليًا');
-      await refreshStats();
-      return;
-    }
-
-    if(!confirm(`سيتم اعتماد ${ready} منتجًا عالي الثقة كـ Manufactured Liquid باستخدام الأحجام المقترحة. المنتجات Medium وManual لن تتغير. هل تريد المتابعة؟`))return;
-
-    btn.textContent='جاري الاعتماد...';
-    const{data,error}=await sb.rpc('confirm_high_confidence_product_suggestions');
-    if(error)throw error;
-    const n=Array.isArray(data)&&data.length?data[0].confirmed_products:data?.confirmed_products??data??0;
-    alert(`تم اعتماد ${n} منتج بنجاح. المنتجات التي تحتاج مراجعة يدوية لم تتغير.`);
-    page=0;await refreshAll();
-  }catch(e){alert(e.message||'تعذر اعتماد الاقتراحات');}
-  finally{btn.disabled=false;btn.textContent='اعتماد الاقتراحات الموثوقة';}
+async function loadDashboard(){
+ const [orders,prod,wh,ships,notes,invs]=await Promise.all([
+  countTable('orders'),countTable('production_orders',q=>q.in('status',['new','in_progress'])),countTable('warehouse_orders',q=>q.in('status',['new','in_progress'])),countTable('shipments',q=>q.in('status',['ready','loaded','out_for_delivery'])),countTable('delivery_notes',q=>q.eq('status','signed_received')),countTable('invoices',q=>q.in('status',['draft','issued']))
+ ]);
+ const items=[['إجمالي الطلبات',orders],['إنتاج مفتوح',prod],['مخزن مفتوح',wh],['شحنات نشطة',ships],['أذون موقعة',notes],['فواتير',invs]];
+ $('dashboardStats').innerHTML=items.map(x=>`<div class="card stat"><span class="muted">${x[0]}</span><strong>${x[1]??'-'}</strong></div>`).join('');
+ $('dashboardFlow').innerHTML='<div class="toolbar"><span class="status st-ready">Orders</span> ← <span class="status st-progress">Production</span> ← <span class="status st-progress">Warehouse</span> ← <span class="status st-ready">Shipment</span> ← <span class="status st-done">Delivery Note</span> ← <span class="status st-done">Invoice</span></div>';
 }
 
-$('loginBtn').onclick=login;$('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')login()});$('configBtn').onclick=openConfig;$('closeConfigBtn').onclick=closeConfig;$('saveConfigBtn').onclick=()=>{const u=$('cfgUrl').value.trim(),a=$('cfgAnon').value.trim();if(!u||!a){alert('أدخل Project URL و Public anon key');return}localStorage.setItem('daily_needs_supabase_url',u);localStorage.setItem('daily_needs_supabase_anon',a);closeConfig();sb=null;initClient();$('configWarning').classList.add('hidden');showLoginMsg('تم حفظ إعداد الاتصال',true)};$('logoutBtn').onclick=logout;$('bulkConfirmBtn').onclick=bulkConfirmHigh;$('refreshBtn').onclick=refreshAll;$('clearFilters').onclick=()=>{$('searchInput').value='';$('reviewFilter').value='all';$('modeFilter').value='all';page=0;loadProducts()};$('reviewFilter').onchange=()=>{page=0;loadProducts()};$('modeFilter').onchange=()=>{page=0;loadProducts()};$('searchInput').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{page=0;loadProducts()},350)};$('prevBtn').onclick=()=>{if(page>0){page--;loadProducts()}};$('nextBtn').onclick=()=>{page++;loadProducts()};restoreSession();
-</script></body></html>
+/* ---------- ORDER ENTRY ---------- */
+async function searchBranches(term){
+ let q=sb.from('branches').select('id,external_code,branch_name,address,area,route_name,customer_id,company_id,customers(name),companies(external_code)').eq('active',true).limit(20);
+ const t=term.trim();if(t)q=q.or(`external_code.ilike.%${t.replace(/[(),]/g,' ')}%,branch_name.ilike.%${t.replace(/[(),]/g,' ')}%,area.ilike.%${t.replace(/[(),]/g,' ')}%,route_name.ilike.%${t.replace(/[(),]/g,' ')}%`);
+ const{data,error}=await q;if(error)return[];
+ return data||[];
+}
+async function searchProducts(term){
+ let q=sb.from('products').select('id,external_code,barcode,product_name,description,original_size_text,production_mode,production_classification_confirmed').eq('active',true).limit(25);
+ const t=term.trim();if(t)q=q.or(`external_code.ilike.%${t.replace(/[(),]/g,' ')}%,product_name.ilike.%${t.replace(/[(),]/g,' ')}%,description.ilike.%${t.replace(/[(),]/g,' ')}%,barcode.ilike.%${t.replace(/[(),]/g,' ')}%`);
+ const{data,error}=await q;if(error)return[];return data||[];
+}
+function renderBranchResults(rows){
+ const box=$('branchResults');if(!rows.length){box.innerHTML='<div class="search-item">لا توجد نتائج</div>';box.classList.remove('hidden');return}
+ box.innerHTML=rows.map((r,i)=>`<div class="search-item" data-i="${i}"><strong>${esc(r.branch_name)}</strong> <span class="code">${esc(r.external_code||'')}</span><div class="muted tiny">${esc(r.customers?.name||'')} • ${esc(r.area||'')} • ${esc(r.route_name||'')}</div></div>`).join('');box.classList.remove('hidden');
+ [...box.querySelectorAll('.search-item[data-i]')].forEach(el=>el.onclick=()=>{selectedBranch=rows[Number(el.dataset.i)];$('selectedBranchLabel').value=`${selectedBranch.branch_name} - ${selectedBranch.customers?.name||''}`;$('branchSearch').value=selectedBranch.branch_name;box.classList.add('hidden')});
+}
+function renderProductResults(rows){
+ const box=$('productResults');if(!rows.length){box.innerHTML='<div class="search-item">لا توجد نتائج</div>';box.classList.remove('hidden');return}
+ box.innerHTML=rows.map((r,i)=>`<div class="search-item" data-i="${i}"><strong>${esc(r.external_code||'')} - ${esc(r.product_name||r.description||'-')}</strong><div class="muted tiny">${esc(r.original_size_text||'')} • ${esc(r.production_mode||'unclassified')}</div></div>`).join('');box.classList.remove('hidden');
+ [...box.querySelectorAll('.search-item[data-i]')].forEach(el=>el.onclick=()=>{const p=rows[Number(el.dataset.i)];if(!orderLines.some(x=>x.product_id===p.id))orderLines.push({product_id:p.id,label:`${p.external_code||''} - ${p.product_name||p.description||''}`,quantity:1,unit_price:''});renderOrderLines();$('productSearch').value='';box.classList.add('hidden')});
+}
+function renderOrderLines(){
+ $('orderLines').innerHTML=orderLines.length?orderLines.map((l,i)=>`<div class="line-row"><div><label>المنتج</label><input value="${esc(l.label)}" readonly></div><div><label>الكمية</label><input type="number" min="0.001" step="0.001" value="${l.quantity}" onchange="orderLines[${i}].quantity=Number(this.value)"></div><div class="price"><label>السعر (اختياري)</label><input type="number" min="0" step="0.01" value="${esc(l.unit_price)}" onchange="orderLines[${i}].unit_price=this.value"></div><div class="remove"><button class="btn btn-danger" onclick="orderLines.splice(${i},1);renderOrderLines()">حذف</button></div></div>`).join(''):'<div class="muted">لم تتم إضافة منتجات بعد.</div>';
+}
+async function submitOrder(){
+ try{
+  if(!selectedBranch)throw new Error('اختر الفرع أولاً');if(!orderLines.length)throw new Error('أضف منتجًا واحدًا على الأقل');
+  const lines=orderLines.map(x=>({product_id:x.product_id,quantity:Number(x.quantity),unit_price:x.unit_price===''?null:Number(x.unit_price)}));
+  $('submitOrderBtn').disabled=true;
+  const{data,error}=await sb.rpc('create_order',{p_branch_id:selectedBranch.id,p_order_date:$('orderDate').value||today(),p_lines:lines,p_notes:$('orderNotes').value.trim()||null});if(error)throw error;
+  alert(`تم إنشاء الطلب ${data?.[0]?.order_no||''} بنجاح`);selectedBranch=null;orderLines=[];$('selectedBranchLabel').value='';$('branchSearch').value='';$('orderNotes').value='';renderOrderLines();loadOrders();
+ }catch(e){alert(e.message||'تعذر إنشاء الطلب')}finally{$('submitOrderBtn').disabled=false}
+}
+async function loadOrders(){
+ const term=$('ordersSearch').value.trim();let q=sb.from('orders').select('id,order_no,order_date,status,branch_id,branches(branch_name,customers(name)),order_lines(id)').order('created_at',{ascending:false}).limit(100);if(term)q=q.ilike('order_no',`%${term}%`);
+ const{data,error}=await q;if(error){$('ordersBody').innerHTML=`<tr><td colspan="5">${esc(error.message)}</td></tr>`;return}
+ $('ordersBody').innerHTML=(data||[]).map(o=>`<tr><td class="code">${esc(o.order_no)}</td><td>${esc(o.order_date)}</td><td>${esc(o.branches?.customers?.name||'')}<div class="muted tiny">${esc(o.branches?.branch_name||'')}</div></td><td>${statusPill(o.status)}</td><td>${o.order_lines?.length||0}</td></tr>`).join('')||'<tr><td colspan="5">لا توجد طلبات</td></tr>';
+}
+
+/* ---------- PLANNING ---------- */
+async function loadPlanning(){
+ const{data:orders}=await sb.from('orders').select('id,order_no,order_date,status,branches(branch_name)').eq('status','approved').order('created_at',{ascending:false}).limit(100);
+ $('planningOrdersBody').innerHTML=(orders||[]).map(o=>`<tr><td><input type="checkbox" class="planOrder" value="${o.id}" style="width:auto"></td><td class="code">${esc(o.order_no)}</td><td>${esc(o.order_date)}</td><td>${esc(o.branches?.branch_name||'')}</td><td>${statusPill(o.status)}</td></tr>`).join('')||'<tr><td colspan="5">لا توجد طلبات Approved</td></tr>';
+ const{data:prod}=await sb.from('production_orders').select('id,production_no,status,source_order_count,notes,production_order_sources(order_id),warehouse_order_sources:production_order_sources(order_id)').order('created_at',{ascending:false}).limit(30);
+ const{data:wh}=await sb.from('warehouse_orders').select('id,warehouse_no,status,source_order_count,created_at').order('created_at',{ascending:false}).limit(30);
+ const whByCount=(wh||[]);
+ $('plansBody').innerHTML=(prod||[]).map((p,i)=>`<tr><td class="code">${esc(p.production_no)}</td><td>${statusPill(p.status)}</td><td>${esc(whByCount[i]?.warehouse_no||'-')}</td><td>${whByCount[i]?statusPill(whByCount[i].status):'-'}</td><td>${p.source_order_count||0}</td></tr>`).join('')||'<tr><td colspan="5">لا توجد خطط</td></tr>';
+}
+async function createPlan(){
+ const ids=[...document.querySelectorAll('.planOrder:checked')].map(x=>x.value);if(!ids.length){alert('حدد طلبًا واحدًا على الأقل');return}
+ try{$('createPlanBtn').disabled=true;const{data,error}=await sb.rpc('create_operations_plan',{p_order_ids:ids,p_notes:'Created from Daily Needs web app'});if(error)throw error;alert(`تم إنشاء خطة التشغيل ${data?.[0]?.production_no||''}`);loadPlanning()}catch(e){alert(e.message||'تعذر إنشاء الخطة')}finally{$('createPlanBtn').disabled=false}
+}
+
+/* ---------- PRODUCTION ---------- */
+async function loadProduction(){
+ let q=sb.from('production_orders').select('id,production_no,production_date,status,source_order_count,started_at,completed_at,production_order_lines(id,family_name,production_mode,required_liters,planned_liters,required_units,production_unit,status)').order('created_at',{ascending:false}).limit(50);const term=$('productionSearch').value.trim();if(term)q=q.ilike('production_no',`%${term}%`);
+ const{data,error}=await q;if(error){$('productionList').innerHTML=esc(error.message);return}
+ $('productionList').innerHTML=(data||[]).map(p=>`<div class="card"><div class="section-title"><div><strong>${esc(p.production_no)}</strong> ${statusPill(p.status)}<div class="muted tiny">${esc(p.production_date)} • ${p.source_order_count||0} orders</div></div><div>${p.status==='new'?`<button class="btn btn-primary" onclick="prodAction('start','${p.id}')">بدء الإنتاج</button>`:''}${p.status==='in_progress'?`<button class="btn btn-success" onclick="prodAction('complete','${p.id}')">إتمام الإنتاج</button>`:''}</div></div><div class="sheet-wrap"><table><thead><tr><th>العائلة</th><th>النوع</th><th>Liters</th><th>Units</th><th>الحالة</th></tr></thead><tbody>${(p.production_order_lines||[]).map(l=>`<tr><td>${esc(l.family_name)}</td><td>${esc(l.production_mode||'-')}</td><td>${Number(l.required_liters||0).toFixed(3)}</td><td>${Number(l.required_units||0)} ${esc(l.production_unit||'')}</td><td>${statusPill(l.status)}</td></tr>`).join('')}</tbody></table></div></div>`).join('')||'<div class="muted">لا توجد أوامر إنتاج</div>';
+}
+async function prodAction(action,id){try{const fn=action==='start'?'start_production':'complete_production';const{error}=await sb.rpc(fn,{p_production_order_id:id});if(error)throw error;loadProduction()}catch(e){alert(e.message)}}
+
+/* ---------- WAREHOUSE ---------- */
+async function loadWarehouse(){
+ const{data,error}=await sb.from('warehouse_orders').select('id,warehouse_no,warehouse_date,status,source_order_count,warehouse_requirements(id,item_code,item_name,required_quantity,prepared_quantity,unit,status,notes)').order('created_at',{ascending:false}).limit(50);if(error){$('warehouseList').innerHTML=esc(error.message);return}
+ $('warehouseList').innerHTML=(data||[]).map(w=>`<div class="card"><div class="section-title"><div><strong>${esc(w.warehouse_no)}</strong> ${statusPill(w.status)}<div class="muted tiny">${esc(w.warehouse_date)} • ${w.source_order_count||0} orders</div></div><div>${w.status==='new'?`<button class="btn btn-primary" onclick="whAction('start','${w.id}')">بدء التجهيز</button>`:''}${w.status==='in_progress'?`<button class="btn btn-success" onclick="whAction('complete','${w.id}')">إتمام التجهيز</button>`:''}</div></div><div class="sheet-wrap"><table><thead><tr><th>الكود</th><th>الصنف</th><th>المطلوب</th><th>المجهز</th><th>الحالة</th></tr></thead><tbody>${(w.warehouse_requirements||[]).map(r=>`<tr><td>${esc(r.item_code||'')}</td><td>${esc(r.item_name)}</td><td>${Number(r.required_quantity)} ${esc(r.unit)}</td><td>${Number(r.prepared_quantity||0)}</td><td>${statusPill(r.status)}</td></tr>`).join('')}</tbody></table></div></div>`).join('')||'<div class="muted">لا توجد أوامر مخزن</div>';
+}
+async function whAction(action,id){try{const fn=action==='start'?'start_warehouse':'complete_warehouse';const{error}=await sb.rpc(fn,{p_warehouse_order_id:id});if(error)throw error;loadWarehouse()}catch(e){alert(e.message)}}
+
+/* ---------- SHIPMENTS ---------- */
+async function loadLoading(){
+ const [ordRes,drvRes,vehRes,shipRes]=await Promise.all([
+  sb.from('orders').select('id,order_no,status,branches(branch_name,route_name)').eq('status','warehouse_done').order('created_at',{ascending:false}).limit(100),
+  sb.from('drivers').select('id,driver_code,driver_name,phone,active').eq('active',true).order('driver_name'),
+  sb.from('vehicles').select('id,vehicle_code,plate_no,vehicle_name,active').eq('active',true).order('vehicle_name'),
+  sb.from('shipments').select('id,shipment_no,shipment_date,route_name,vehicle_label,driver_name,driver_phone,status,shipment_stops(id,stop_sequence,stop_status,branches(branch_name))').order('created_at',{ascending:false}).limit(40)
+ ]);
+ $('shipReadyOrdersBody').innerHTML=(ordRes.data||[]).map(o=>`<tr><td><input type="checkbox" class="shipOrder" value="${o.id}" style="width:auto"></td><td class="code">${esc(o.order_no)}</td><td>${esc(o.branches?.branch_name||'')}</td><td>${esc(o.branches?.route_name||'')}</td></tr>`).join('')||'<tr><td colspan="4">لا توجد طلبات جاهزة للشحن</td></tr>';
+ $('shipmentDriver').innerHTML='<option value="">-- اختر --</option>'+(drvRes.data||[]).map(d=>`<option value="${esc(d.driver_name)}" data-phone="${esc(d.phone||'')}">${esc(d.driver_name)}${d.driver_code?' - '+esc(d.driver_code):''}</option>`).join('');
+ $('shipmentVehicle').innerHTML='<option value="">-- اختر --</option>'+(vehRes.data||[]).map(v=>`<option value="${esc(v.vehicle_name||v.plate_no||v.vehicle_code||'')}">${esc(v.vehicle_name||v.plate_no||v.vehicle_code||'')}</option>`).join('');
+ $('shipmentsList').innerHTML=(shipRes.data||[]).map(s=>`<div class="card"><div class="section-title"><div><strong>${esc(s.shipment_no)}</strong> ${statusPill(s.status)}<div class="muted tiny">${esc(s.route_name||'')} • ${esc(s.driver_name||'')} • ${esc(s.vehicle_label||'')}</div></div><div>${s.status==='ready'?`<button class="btn btn-primary" onclick="shipmentAction('load','${s.id}')">تم التحميل</button>`:''}${s.status==='loaded'?`<button class="btn btn-success" onclick="shipmentAction('dispatch','${s.id}')">خروج للتسليم</button>`:''}</div></div><div class="tiny muted">${(s.shipment_stops||[]).map(x=>`#${x.stop_sequence} ${esc(x.branches?.branch_name||'')} (${esc(x.stop_status)})`).join(' • ')}</div></div>`).join('')||'<div class="muted">لا توجد شحنات</div>';
+}
+async function createShipment(){
+ const ids=[...document.querySelectorAll('.shipOrder:checked')].map(x=>x.value);if(!ids.length){alert('حدد طلبًا واحدًا على الأقل');return}
+ try{$('createShipmentBtn').disabled=true;const{data,error}=await sb.rpc('create_shipment',{p_order_ids:ids,p_route_name:$('shipmentRoute').value.trim()||null,p_vehicle_label:$('shipmentVehicle').value||null,p_driver_name:$('shipmentDriver').value||null,p_driver_phone:$('shipmentDriverPhone').value.trim()||null,p_notes:$('shipmentNotes').value.trim()||null});if(error)throw error;alert(`تم إنشاء الشحنة ${data?.[0]?.shipment_no||''}`);loadLoading()}catch(e){alert(e.message)}finally{$('createShipmentBtn').disabled=false}
+}
+async function shipmentAction(a,id){try{const fn=a==='load'?'mark_shipment_loaded':'dispatch_shipment';const{error}=await sb.rpc(fn,{p_shipment_id:id});if(error)throw error;loadLoading()}catch(e){alert(e.message)}}
+
+/* ---------- DRIVER ---------- */
+async function loadDriver(){
+ const{data,error}=await sb.from('shipments').select('id,shipment_no,route_name,driver_name,driver_phone,status,shipment_stops(id,stop_sequence,stop_status,receiver_name,branches(branch_name,address,customers(name)),shipment_stop_lines(id,quantity,delivered_quantity,products(product_name,external_code)))').eq('status','out_for_delivery').order('created_at',{ascending:false}).limit(30);if(error){$('driverShipments').innerHTML=esc(error.message);return}
+ $('driverShipments').innerHTML=(data||[]).map(s=>`<div class="card"><div class="section-title"><div><strong>${esc(s.shipment_no)}</strong><div class="muted">${esc(s.route_name||'')} • ${esc(s.driver_name||'')}</div></div>${statusPill(s.status)}</div>${(s.shipment_stops||[]).sort((a,b)=>a.stop_sequence-b.stop_sequence).map(st=>`<div class="card" style="background:#f8fafc"><div class="section-title"><div><strong>#${st.stop_sequence} ${esc(st.branches?.branch_name||'')}</strong><div class="muted tiny">${esc(st.branches?.customers?.name||'')} • ${esc(st.branches?.address||'')}</div></div>${statusPill(st.stop_status)}</div><div class="tiny">${(st.shipment_stop_lines||[]).map(l=>`${esc(l.products?.external_code||'')} ${esc(l.products?.product_name||'')} × ${Number(l.quantity)}`).join(' • ')}</div><div class="right" style="margin-top:10px">${st.stop_status==='pending'?`<button class="btn btn-primary" onclick="stopArrival('${st.id}')">وصلت للعميل</button>`:''}${['pending','arrived'].includes(st.stop_status)?`<button class="btn btn-success" onclick="stopDeliver('${st.id}')">تم التسليم</button>`:''}</div></div>`).join('')}</div>`).join('')||'<div class="muted">لا توجد شحنات خارجة للتسليم</div>';
+}
+async function stopArrival(id){try{const{error}=await sb.rpc('confirm_stop_arrival',{p_shipment_stop_id:id});if(error)throw error;loadDriver()}catch(e){alert(e.message)}}
+async function stopDeliver(id){const receiver=prompt('اسم المستلم (اختياري):','')||null;try{const{error}=await sb.rpc('confirm_stop_delivery',{p_shipment_stop_id:id,p_receiver_name:receiver,p_receiver_phone:null,p_delivery_notes:null});if(error)throw error;loadDriver()}catch(e){alert(e.message)}}
+
+/* ---------- DELIVERY ---------- */
+async function loadDeliveryNotes(){
+ let q=sb.from('delivery_notes').select('id,delivery_note_no,delivery_date,status,signed,signed_ref,receiver_name,branches(branch_name,customers(name))').order('created_at',{ascending:false}).limit(100);const t=$('deliverySearch').value.trim();if(t)q=q.ilike('delivery_note_no',`%${t}%`);
+ const{data,error}=await q;if(error){$('deliveryBody').innerHTML=`<tr><td colspan="6">${esc(error.message)}</td></tr>`;return}
+ $('deliveryBody').innerHTML=(data||[]).map(d=>`<tr><td class="code">${esc(d.delivery_note_no)}</td><td>${esc(d.delivery_date)}</td><td>${esc(d.branches?.customers?.name||'')}<div class="muted tiny">${esc(d.branches?.branch_name||'')}</div></td><td>${statusPill(d.status)}</td><td>${d.signed?'✓ '+esc(d.signed_ref||''):'-'}</td><td>${d.status==='delivered'&&!d.signed?`<button class="btn btn-success" onclick="signNote('${d.id}')">استلام النسخة الموقعة</button>`:'-'}</td></tr>`).join('')||'<tr><td colspan="6">لا توجد أذون</td></tr>';
+}
+async function signNote(id){const ref=prompt('مرجع / رقم النسخة الموقعة (اختياري):','')||null;try{const{error}=await sb.rpc('receive_signed_delivery_note',{p_delivery_note_id:id,p_signed_ref:ref});if(error)throw error;loadDeliveryNotes()}catch(e){alert(e.message)}}
+
+/* ---------- INVOICES ---------- */
+async function loadInvoices(){
+ const [compRes,invRes]=await Promise.all([
+  sb.from('companies').select('id,external_code,name').eq('active',true).order('external_code'),
+  sb.from('invoices').select('id,invoice_no,invoice_month,status,subtotal,tax_amount,total_amount,companies(external_code,name)').order('created_at',{ascending:false}).limit(100)
+ ]);
+ $('invoiceCompany').innerHTML='<option value="">-- اختر الشركة --</option>'+(compRes.data||[]).map(c=>`<option value="${c.id}">${esc(c.name||c.external_code||c.id)}</option>`).join('');
+ $('invoiceBody').innerHTML=(invRes.data||[]).map(i=>`<tr><td class="code">${esc(i.invoice_no)}</td><td>${esc(i.companies?.name||i.companies?.external_code||'')}</td><td>${esc(i.invoice_month)}</td><td>${statusPill(i.status)}</td><td>${Number(i.subtotal||0).toFixed(2)}</td><td>${Number(i.tax_amount||0).toFixed(2)}</td><td><strong>${Number(i.total_amount||0).toFixed(2)}</strong></td><td>${i.status==='draft'?`<button class="btn btn-success" onclick="issueInvoice('${i.id}')">إصدار</button>`:'-'}</td></tr>`).join('')||'<tr><td colspan="8">لا توجد فواتير</td></tr>';
+}
+async function generateInvoice(){try{const company=$('invoiceCompany').value,month=$('invoiceMonth').value;if(!company||!month)throw new Error('اختر الشركة والشهر');const{data,error}=await sb.rpc('generate_monthly_invoice',{p_company_id:company,p_invoice_month:`${month}-01`,p_tax_amount:Number($('invoiceTax').value||0),p_notes:$('invoiceNotes').value.trim()||null});if(error)throw error;alert(`تم تجهيز المسودة ${data?.[0]?.invoice_no||''}`);loadInvoices()}catch(e){alert(e.message)}}
+async function issueInvoice(id){if(!confirm('إصدار الفاتورة؟ بعد الإصدار لن تكون Draft قابلة للتحديث.'))return;try{const{error}=await sb.rpc('issue_invoice',{p_invoice_id:id});if(error)throw error;loadInvoices()}catch(e){alert(e.message)}}
+
+/* ---------- MASTER ---------- */
+async function loadMaster(){loadProductAdmin();loadDrivers();loadVehicles();loadUsers()}
+async function loadProductAdmin(){
+ let q=sb.from('product_production_review_v1').select('*',{count:'exact'});const t=$('productAdminSearch').value.trim();if(t)q=q.or(`product_code.ilike.%${t.replace(/[(),]/g,' ')}%,product_name.ilike.%${t.replace(/[(),]/g,' ')}%,description.ilike.%${t.replace(/[(),]/g,' ')}%`);const m=$('productModeFilter').value;if(m)q=q.eq('production_mode',m);
+ const{data,error,count}=await q.order('product_code',{ascending:true,nullsFirst:false}).range(productAdminPage*PRODUCT_PAGE,productAdminPage*PRODUCT_PAGE+PRODUCT_PAGE-1);if(error){$('productAdminBody').innerHTML=`<tr><td colspan="9">${esc(error.message)}</td></tr>`;return}
+ const rows=data||[],bundleIds=rows.filter(r=>r.production_mode==='bundle').map(r=>r.product_id),bom={};if(bundleIds.length){const{data:parts}=await sb.from('product_bundle_components').select('bundle_product_id').in('bundle_product_id',bundleIds);(parts||[]).forEach(x=>bom[x.bundle_product_id]=(bom[x.bundle_product_id]||0)+1)}
+ $('productAdminBody').innerHTML=rows.map(r=>`<tr data-pid="${r.product_id}"><td class="code">${esc(r.product_code||'-')}</td><td>${esc(r.product_name||r.description||'-')}<div class="muted tiny">${esc(r.original_size_text||'')}</div></td><td><select class="pmode"><option value="unclassified" ${r.production_mode==='unclassified'?'selected':''}>Unclassified</option><option value="manufactured_liquid" ${r.production_mode==='manufactured_liquid'?'selected':''}>Manufactured Liquid</option><option value="manufactured_unit" ${r.production_mode==='manufactured_unit'?'selected':''}>Manufactured Unit</option><option value="stock_only" ${r.production_mode==='stock_only'?'selected':''}>Stock Only</option><option value="bundle" ${r.production_mode==='bundle'?'selected':''}>Bundle</option></select></td><td><input class="pvol" type="number" value="${r.production_volume_ml??''}" ${r.production_mode==='manufactured_liquid'?'':'disabled'}></td><td><input class="punit" value="${esc(r.production_unit||'')}" ${r.production_mode==='manufactured_unit'?'':'disabled'}></td><td><input class="pconfirm" type="checkbox" style="width:auto" ${r.production_classification_confirmed?'checked':''}></td><td>${r.production_mode==='bundle'?(bom[r.product_id]?`<span class="status st-done">${bom[r.product_id]} components</span>`:'<span class="status st-bad">BOM Missing</span>'):'-'}</td><td><input class="pnote" value="${esc(r.production_classification_note||'')}"></td><td><button class="btn btn-primary" onclick="saveProduct('${r.product_id}')">حفظ</button></td></tr>`).join('');
+ document.querySelectorAll('tr[data-pid]').forEach(tr=>tr.querySelector('.pmode').onchange=e=>{const m=e.target.value;tr.querySelector('.pvol').disabled=m!=='manufactured_liquid';tr.querySelector('.punit').disabled=m!=='manufactured_unit'});
+ productAdminTotal=count||0;const pages=Math.max(1,Math.ceil(productAdminTotal/PRODUCT_PAGE));$('productAdminPageInfo').textContent=`صفحة ${productAdminPage+1} من ${pages} • ${productAdminTotal} منتج`;$('productAdminPrev').disabled=productAdminPage===0;$('productAdminNext').disabled=productAdminPage>=pages-1;
+ const{data:stats}=await sb.from('products').select('production_mode,production_classification_confirmed');const s=stats||[];$('productStats').innerHTML=[['الإجمالي',s.length],['Liquid',s.filter(x=>x.production_mode==='manufactured_liquid').length],['Unit',s.filter(x=>x.production_mode==='manufactured_unit').length],['Bundle',s.filter(x=>x.production_mode==='bundle').length]].map(x=>`<div class="card stat"><span class="muted">${x[0]}</span><strong>${x[1]}</strong></div>`).join('');
+}
+async function saveProduct(id){const tr=document.querySelector(`tr[data-pid="${CSS.escape(id)}"]`),mode=tr.querySelector('.pmode').value,vol=tr.querySelector('.pvol').value,unit=tr.querySelector('.punit').value,note=tr.querySelector('.pnote').value,confirm=tr.querySelector('.pconfirm').checked;try{const{error}=await sb.rpc('set_product_production_classification',{p_product_id:id,p_production_mode:mode,p_production_volume_ml:vol===''?null:Number(vol),p_production_unit:unit||null,p_note:note||null,p_confirm:confirm});if(error)throw error;loadProductAdmin()}catch(e){alert(e.message)}}
+async function loadDrivers(){const{data,error}=await sb.from('drivers').select('*').order('driver_name');$('driversBody').innerHTML=error?`<tr><td colspan="5">${esc(error.message)}</td></tr>`:(data||[]).map(d=>`<tr><td>${esc(d.driver_code||'')}</td><td>${esc(d.driver_name)}</td><td>${esc(d.phone||'')}</td><td>${esc(d.license_no||'')}</td><td>${d.active?'✓':'-'}</td></tr>`).join('')||'<tr><td colspan="5">لا توجد بيانات</td></tr>'}
+async function loadVehicles(){const{data,error}=await sb.from('vehicles').select('*').order('vehicle_name');$('vehiclesBody').innerHTML=error?`<tr><td colspan="5">${esc(error.message)}</td></tr>`:(data||[]).map(v=>`<tr><td>${esc(v.vehicle_code||'')}</td><td>${esc(v.plate_no||'')}</td><td>${esc(v.vehicle_name||'')}</td><td>${esc(v.vehicle_type||'')}</td><td>${v.active?'✓':'-'}</td></tr>`).join('')||'<tr><td colspan="5">لا توجد بيانات</td></tr>'}
+async function loadUsers(){const{data,error}=await sb.from('user_profiles').select('user_id,username,full_name,role,active').order('username');$('usersBody').innerHTML=error?`<tr><td colspan="4">${esc(error.message)}</td></tr>`:(data||[]).map(u=>`<tr><td class="code">${esc(u.username||'')}</td><td>${esc(u.full_name)}</td><td>${esc(u.role)}</td><td>${u.active?'✓':'-'}</td></tr>`).join('')}
+
+/* ---------- EVENTS ---------- */
+$('loginBtn').onclick=login;$('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')login()});$('configBtn').onclick=openConfig;$('closeConfigBtn').onclick=closeConfig;$('saveConfigBtn').onclick=()=>{const u=$('cfgUrl').value.trim(),k=$('cfgAnon').value.trim();if(!u||!k){alert('أدخل Project URL والمفتاح');return}localStorage.setItem('daily_needs_supabase_url',u);localStorage.setItem('daily_needs_supabase_anon',k);closeConfig();sb=null;initClient();alert('تم حفظ إعداد الاتصال')};$('logoutBtn').onclick=logout;$('globalRefresh').onclick=()=>loadPage(currentPage);
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+$('orderDate').value=today();$('invoiceMonth').value=today().slice(0,7);
+$('branchSearch').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(async()=>renderBranchResults(await searchBranches($('branchSearch').value)),250)};
+$('productSearch').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(async()=>renderProductResults(await searchProducts($('productSearch').value)),250)};
+$('submitOrderBtn').onclick=submitOrder;$('ordersSearch').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(loadOrders,300)};$('createPlanBtn').onclick=createPlan;$('productionSearch').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(loadProduction,300)};
+$('shipmentDriver').onchange=()=>{const o=$('shipmentDriver').selectedOptions[0];$('shipmentDriverPhone').value=o?.dataset.phone||''};$('createShipmentBtn').onclick=createShipment;$('deliverySearch').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(loadDeliveryNotes,300)};$('generateInvoiceBtn').onclick=generateInvoice;
+document.querySelectorAll('[data-mastertab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-mastertab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.mastertab').forEach(x=>x.classList.add('hidden'));$(`master-${b.dataset.mastertab}`).classList.remove('hidden')});
+$('productAdminRefresh').onclick=()=>{productAdminPage=0;loadProductAdmin()};$('productAdminSearch').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{productAdminPage=0;loadProductAdmin()},300)};$('productModeFilter').onchange=()=>{productAdminPage=0;loadProductAdmin()};$('productAdminPrev').onclick=()=>{if(productAdminPage>0){productAdminPage--;loadProductAdmin()}};$('productAdminNext').onclick=()=>{productAdminPage++;loadProductAdmin()};
+renderOrderLines();restoreSession();
+</script>
+</body>
+</html>
