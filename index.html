@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Daily Needs - تصنيف المنتجات</title>
+<title>Daily Needs - تصنيف المنتجات - Bundle Support</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Tahoma,Arial,sans-serif;background:#f5f7fb;color:#172033}.hidden{display:none!important}
@@ -19,7 +19,7 @@ main{padding:20px;max-width:1500px;margin:auto}.card{background:#fff;border:1px 
 <div id="loginScreen" class="login-wrap"><div class="login-card"><h2>Daily Needs</h2><div class="muted" style="margin-bottom:16px">دخول مدير النظام - تصنيف المنتجات</div><div id="configWarning" class="config-note hidden">يلزم إدخال إعدادات Supabase لأول مرة من زر "إعداد الاتصال".</div><div class="field"><label>اسم المستخدم</label><input id="loginUsername" autocomplete="username" placeholder="admin"></div><div class="field"><label>كلمة المرور</label><input id="loginPassword" type="password" autocomplete="current-password"></div><div id="loginMsg"></div><div style="display:flex;gap:8px"><button id="loginBtn" class="primary" style="flex:1">دخول</button><button id="configBtn" class="secondary">إعداد الاتصال</button></div></div></div>
 <div id="appScreen" class="hidden"><header><div><h1>تصنيف المنتجات للإنتاج</h1><div class="sub">Daily Needs • Admin Product Classification</div></div><div class="head-actions"><span id="userLabel"></span><button id="bulkConfirmBtn" class="primary">اعتماد الاقتراحات الموثوقة</button><button id="refreshBtn" class="secondary">تحديث</button><button id="logoutBtn" class="danger">خروج</button></div></header><main>
 <div class="stats"><div class="stat"><div class="label">إجمالي المنتجات</div><div id="stTotal" class="value">-</div></div><div class="stat"><div class="label">تم التأكيد</div><div id="stConfirmed" class="value">-</div></div><div class="stat"><div class="label">متبقي للتصنيف</div><div id="stRemaining" class="value">-</div></div><div class="stat"><div class="label">جاهز للاعتماد</div><div id="stHigh" class="value">-</div></div><div class="stat"><div class="label">Manufactured Liquid</div><div id="stLiquid" class="value">-</div></div><div class="stat"><div class="label">Stock Only</div><div id="stStock" class="value">-</div></div></div>
-<div class="card"><div class="filters"><div><label>بحث</label><input id="searchInput" placeholder="كود / اسم المنتج / الوصف / الباركود"></div><div><label>حالة المراجعة</label><select id="reviewFilter"><option value="all">الكل</option><option value="needs_classification">يحتاج تصنيف</option><option value="confirmed">تم التأكيد</option><option value="needs_volume">يحتاج حجم</option><option value="needs_unit">يحتاج وحدة</option><option value="needs_confirmation">يحتاج تأكيد</option></select></div><div><label>نوع التشغيل</label><select id="modeFilter"><option value="all">الكل</option><option value="unclassified">Unclassified</option><option value="manufactured_liquid">Manufactured Liquid</option><option value="manufactured_unit">Manufactured Unit</option><option value="stock_only">Stock Only</option></select></div><button id="clearFilters" class="secondary">مسح الفلاتر</button></div></div>
+<div class="card"><div class="filters"><div><label>بحث</label><input id="searchInput" placeholder="كود / اسم المنتج / الوصف / الباركود"></div><div><label>حالة المراجعة</label><select id="reviewFilter"><option value="all">الكل</option><option value="needs_classification">يحتاج تصنيف</option><option value="confirmed">تم التأكيد</option><option value="needs_volume">يحتاج حجم</option><option value="needs_unit">يحتاج وحدة</option><option value="needs_confirmation">يحتاج تأكيد</option></select></div><div><label>نوع التشغيل</label><select id="modeFilter"><option value="all">الكل</option><option value="unclassified">Unclassified</option><option value="manufactured_liquid">Manufactured Liquid</option><option value="manufactured_unit">Manufactured Unit</option><option value="stock_only">Stock Only</option><option value="bundle">Bundle</option></select></div><button id="clearFilters" class="secondary">مسح الفلاتر</button></div></div>
 <div class="card"><div class="table-wrap"><table><thead><tr><th>الكود</th><th>المنتج</th><th>الحجم الأصلي</th><th>اقتراح الحجم</th><th>نوع التشغيل</th><th>حجم الإنتاج ml</th><th>وحدة الإنتاج</th><th>تأكيد</th><th>ملاحظة</th><th>الحالة</th><th>حفظ</th></tr></thead><tbody id="productBody"></tbody></table></div><div class="pagination"><div id="pageInfo" class="muted"></div><div style="display:flex;gap:8px"><button id="prevBtn" class="secondary">السابق</button><button id="nextBtn" class="secondary">التالي</button></div></div></div>
 </main></div>
 <div id="configModal" class="modal hidden"><div class="modal-card"><h3 style="margin-top:0">إعداد اتصال Supabase</h3><div class="config-note">استخدم Project URL و Public anon key فقط. لا تستخدم Service Role Key داخل المتصفح.</div><div class="field"><label>Supabase Project URL</label><input id="cfgUrl" placeholder="https://xxxx.supabase.co"></div><div class="field"><label>Public anon key</label><textarea id="cfgAnon" rows="5"></textarea></div><div class="modal-actions"><button id="saveConfigBtn" class="primary">حفظ</button><button id="closeConfigBtn" class="secondary">إلغاء</button></div></div></div>
@@ -36,8 +36,113 @@ async function enterApp(u){$('loginScreen').classList.add('hidden');$('appScreen
 async function restoreSession(){if(!initClient()){$('configWarning').classList.remove('hidden');return}const{data}=await sb.auth.getSession();if(!data.session)return;const{data:role,error}=await sb.rpc('current_app_role');if(error||role!=='admin'){await sb.auth.signOut();return}let e=data.session.user.email||'';await enterApp(e.endsWith('@dailyneeds.local')?e.replace('@dailyneeds.local',''):e)}
 async function logout(){if(sb)await sb.auth.signOut();location.reload()}
 function buildQuery(){let q=sb.from('product_production_review_v1').select('*',{count:'exact'});const t=$('searchInput').value.trim();if(t){const safe=t.replace(/[(),]/g,' ');q=q.or(`product_code.ilike.%${safe}%,product_name.ilike.%${safe}%,description.ilike.%${safe}%,barcode.ilike.%${safe}%`)}const rf=$('reviewFilter').value;if(rf!=='all')q=q.eq('review_status',rf);const mf=$('modeFilter').value;if(mf!=='all')q=q.eq('production_mode',mf);return q}
-async function loadProducts(){$('productBody').innerHTML='<tr><td colspan="11">جاري التحميل...</td></tr>';const{data,error,count}=await buildQuery().order('product_code',{ascending:true,nullsFirst:false}).range(page*PAGE_SIZE,page*PAGE_SIZE+PAGE_SIZE-1);if(error){$('productBody').innerHTML=`<tr><td colspan="11" style="color:#a01f1f">${esc(error.message)}</td></tr>`;return}totalFiltered=count||0;renderRows(data||[]);renderPager()}
-function renderRows(rows){if(!rows.length){$('productBody').innerHTML='<tr><td colspan="11">لا توجد نتائج</td></tr>';return}$('productBody').innerHTML=rows.map(r=>{const id=esc(r.product_id),m=r.production_mode||'unclassified',c=!!r.production_classification_confirmed;return `<tr data-id="${id}"><td><div class="code">${esc(r.product_code||'-')}</div><div class="tiny">${esc(r.barcode||'')}</div></td><td><strong>${esc(r.product_name||'-')}</strong><div class="muted">${esc(r.description||'')}</div><div class="tiny">${esc(r.product_family||'')}</div></td><td>${esc(r.original_size_text||'-')}</td><td>${r.parsed_volume_ml_candidate!=null?`<span class="badge b-info">${esc(r.parsed_volume_ml_candidate)} ml</span>`:'-'}</td><td><select class="mode"><option value="unclassified" ${m==='unclassified'?'selected':''}>Unclassified</option><option value="manufactured_liquid" ${m==='manufactured_liquid'?'selected':''}>Manufactured Liquid</option><option value="manufactured_unit" ${m==='manufactured_unit'?'selected':''}>Manufactured Unit</option><option value="stock_only" ${m==='stock_only'?'selected':''}>Stock Only</option></select></td><td><input class="volume" type="number" min="0.001" step="0.001" value="${r.production_volume_ml??''}" ${m==='manufactured_liquid'?'':'disabled'}></td><td><input class="unit" value="${esc(r.production_unit||'')}" ${m==='manufactured_unit'?'':'disabled'} placeholder="pcs / tray / pack"></td><td style="text-align:center"><input class="confirm" type="checkbox" style="width:auto" ${c?'checked':''}></td><td><input class="note" value="${esc(r.production_classification_note||'')}" placeholder="ملاحظة اختيارية"></td><td>${statusBadge(r.review_status)}</td><td><button class="primary saveBtn" onclick="saveRow('${id}')">حفظ</button><div class="save-state"></div></td></tr>`}).join('');document.querySelectorAll('tr[data-id]').forEach(tr=>{tr.querySelector('.mode').addEventListener('change',e=>{const m=e.target.value,v=tr.querySelector('.volume'),u=tr.querySelector('.unit');v.disabled=m!=='manufactured_liquid';u.disabled=m!=='manufactured_unit';if(m!=='manufactured_liquid')v.value='';if(m!=='manufactured_unit')u.value='';if(m==='unclassified')tr.querySelector('.confirm').checked=false})})}
+async function loadProducts(){
+  $('productBody').innerHTML='<tr><td colspan="11">جاري التحميل...</td></tr>';
+  const{data,error,count}=await buildQuery().order('product_code',{ascending:true,nullsFirst:false}).range(page*PAGE_SIZE,page*PAGE_SIZE+PAGE_SIZE-1);
+  if(error){
+    $('productBody').innerHTML=`<tr><td colspan="11" style="color:#a01f1f">${esc(error.message)}</td></tr>`;
+    return;
+  }
+  const rows=data||[];
+  const bundleIds=rows.filter(r=>r.production_mode==='bundle').map(r=>r.product_id);
+  if(bundleIds.length){
+    const{data:parts,error:partsErr}=await sb.from('product_bundle_components').select('bundle_product_id').in('bundle_product_id',bundleIds);
+    if(!partsErr){
+      const counts={};
+      (parts||[]).forEach(x=>counts[x.bundle_product_id]=(counts[x.bundle_product_id]||0)+1);
+      rows.forEach(r=>{if(r.production_mode==='bundle')r.bundle_component_count=counts[r.product_id]||0});
+    }else{
+      rows.forEach(r=>{if(r.production_mode==='bundle')r.bundle_component_count=null});
+    }
+  }
+  totalFiltered=count||0;
+  renderRows(rows);
+  renderPager();
+}
+function renderRows(rows){
+  if(!rows.length){
+    $('productBody').innerHTML='<tr><td colspan="11">لا توجد نتائج</td></tr>';
+    return;
+  }
+
+  $('productBody').innerHTML=rows.map(r=>{
+    const id=esc(r.product_id),
+          m=r.production_mode||'unclassified',
+          c=!!r.production_classification_confirmed,
+          bundleMissing=(m==='bundle' && r.bundle_component_count===0),
+          bundleUnknown=(m==='bundle' && r.bundle_component_count==null);
+
+    let rowStatus=statusBadge(r.review_status);
+    if(bundleMissing){
+      rowStatus='<span class="badge b-warn">BOM Missing</span>';
+    }else if(m==='bundle' && !bundleUnknown){
+      rowStatus=`<span class="badge b-ok">Bundle BOM: ${esc(r.bundle_component_count)}</span>`;
+    }else if(bundleUnknown){
+      rowStatus='<span class="badge b-gray">Bundle BOM ?</span>';
+    }
+
+    const noteValue = r.production_classification_note || '';
+
+    return `<tr data-id="${id}">
+      <td>
+        <div class="code">${esc(r.product_code||'-')}</div>
+        <div class="tiny">${esc(r.barcode||'')}</div>
+      </td>
+      <td>
+        <strong>${esc(r.product_name||'-')}</strong>
+        <div class="muted">${esc(r.description||'')}</div>
+        <div class="tiny">${esc(r.product_family||'')}</div>
+      </td>
+      <td>${esc(r.original_size_text||'-')}</td>
+      <td>${r.parsed_volume_ml_candidate!=null?`<span class="badge b-info">${esc(r.parsed_volume_ml_candidate)} ml</span>`:'-'}</td>
+      <td>
+        <select class="mode">
+          <option value="unclassified" ${m==='unclassified'?'selected':''}>Unclassified</option>
+          <option value="manufactured_liquid" ${m==='manufactured_liquid'?'selected':''}>Manufactured Liquid</option>
+          <option value="manufactured_unit" ${m==='manufactured_unit'?'selected':''}>Manufactured Unit</option>
+          <option value="stock_only" ${m==='stock_only'?'selected':''}>Stock Only</option>
+          <option value="bundle" ${m==='bundle'?'selected':''}>Bundle</option>
+        </select>
+      </td>
+      <td>
+        <input class="volume" type="number" min="0.001" step="0.001"
+          value="${r.production_volume_ml??''}"
+          ${m==='manufactured_liquid'?'':'disabled'}>
+      </td>
+      <td>
+        <input class="unit"
+          value="${esc(r.production_unit||'')}"
+          ${m==='manufactured_unit'?'':'disabled'}
+          placeholder="pcs / tray / pack">
+      </td>
+      <td style="text-align:center">
+        <input class="confirm" type="checkbox" style="width:auto" ${c?'checked':''}>
+      </td>
+      <td>
+        <input class="note" value="${esc(noteValue)}" placeholder="ملاحظة اختيارية">
+        ${bundleMissing?'<div class="tiny" style="color:#9a6700;margin-top:5px">تم تصنيف المنتج Bundle لكن مكوناته لم تُعرّف بعد، لذلك التخطيط متوقف له.</div>':''}
+      </td>
+      <td>${rowStatus}</td>
+      <td>
+        <button class="primary saveBtn" onclick="saveRow('${id}')">حفظ</button>
+        <div class="save-state"></div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.querySelectorAll('tr[data-id]').forEach(tr=>{
+    tr.querySelector('.mode').addEventListener('change',e=>{
+      const m=e.target.value,
+            v=tr.querySelector('.volume'),
+            u=tr.querySelector('.unit');
+      v.disabled=m!=='manufactured_liquid';
+      u.disabled=m!=='manufactured_unit';
+      if(m!=='manufactured_liquid')v.value='';
+      if(m!=='manufactured_unit')u.value='';
+      if(m==='unclassified')tr.querySelector('.confirm').checked=false;
+    });
+  });
+}
 async function saveRow(id){const tr=document.querySelector(`tr[data-id="${CSS.escape(id)}"]`),btn=tr.querySelector('.saveBtn'),st=tr.querySelector('.save-state'),mode=tr.querySelector('.mode').value,vr=tr.querySelector('.volume').value.trim(),unit=tr.querySelector('.unit').value.trim(),note=tr.querySelector('.note').value.trim(),confirm=tr.querySelector('.confirm').checked,vol=vr===''?null:Number(vr);try{btn.disabled=true;st.textContent='جاري الحفظ...';st.style.color='#566176';const{error}=await sb.rpc('set_product_production_classification',{p_product_id:id,p_production_mode:mode,p_production_volume_ml:vol,p_production_unit:unit||null,p_note:note||null,p_confirm:confirm});if(error)throw error;st.textContent='تم الحفظ';st.style.color='#18703d';await refreshStats();await loadProducts()}catch(e){st.textContent=e.message||'فشل الحفظ';st.style.color='#a01f1f'}finally{btn.disabled=false}}
 async function refreshStats(){
   const [reviewRes,suggRes]=await Promise.all([
